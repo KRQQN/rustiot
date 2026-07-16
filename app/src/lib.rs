@@ -1,3 +1,4 @@
+mod components;
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -5,6 +6,7 @@ use leptos_router::{
     StaticSegment,
 };
 
+pub use components::hero::Hero;
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
         <!DOCTYPE html>
@@ -12,6 +14,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
             <head>
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <script src="https://cdn.tailwindcss.com"></script>
                 <AutoReload options=options.clone()/>
                 <HydrationScripts options/>
                 <MetaTags/>
@@ -25,16 +28,13 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 
 #[component]
 pub fn App() -> impl IntoView {
-    // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
     view! {
         <Stylesheet id="leptos" href="/pkg/rustiot.css"/>
 
-        // sets the document title
-        <Title text="Welcome to Leptos"/>
+        <Title text="NEXTIOT"/>
 
-        // content for this welcome page
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
@@ -45,15 +45,11 @@ pub fn App() -> impl IntoView {
     }
 }
 
-/// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    // Creates a reactive value to update the button
-    let count = RwSignal::new(0);
-    let on_click = move |_| *count.write() += 1;
-
     view! {
-        <h1>"Welcome to Leptos!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
+        <div class="min-w-screen px-4">
+            <Hero/>
+        </div>
     }
 }

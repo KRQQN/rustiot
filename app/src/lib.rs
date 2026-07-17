@@ -7,6 +7,8 @@ use leptos_router::{
 };
 
 pub use components::hero::Hero;
+
+use crate::components::{platform::Platform, problems::Problems, solutions::Solutions};
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
         <!DOCTYPE html>
@@ -48,10 +50,11 @@ pub fn App() -> impl IntoView {
 #[component]
 fn HomePage() -> impl IntoView {
     view! {
-        <div id="hero" class="w-full mx-auto">
-            <div class="lg:max-w-[80rem] lg:h-screen m-auto content-center">
+        <div id="hero" class="">
                 <Hero/>
-            </div>
         </div>
+        <Problems/>
+        <Solutions/>
+        <Platform/>
     }
 }

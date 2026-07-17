@@ -48,8 +48,10 @@ pub fn App() -> impl IntoView {
 #[component]
 fn HomePage() -> impl IntoView {
     view! {
-        <div class="min-w-screen px-4">
-            <Hero/>
+        <div id="hero" class="w-full mx-auto">
+            <div class="lg:max-w-[80rem] mx-auto">
+                <Hero/>
+            </div>
         </div>
     }
 }

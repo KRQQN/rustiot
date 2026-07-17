@@ -23,12 +23,12 @@ pub fn Hero() -> impl IntoView {
     });
 
     view! {
-        <section class="max-w-[80rem] flex items-center px-8 justify-center mx-auto relative">
+        <section class="flex-0 flex items-center w-full justify-center">
 
-            <div class="w-full flex flex-col sm:flex-row mx-auto py-24 flex justify-between items-center z-10 gap-4">
+            <div class="flex flex-col lg:flex-row w-full py-24 mx-8 justify-between items-center z-10 gap-4">
 
                 {/* LEFT SECTION */}
-                <div class="flex-1 flex-col justify-center p-8">
+                <div class="flex-1 flex-col justify-center p-4">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-black font-bold text-3xl">
                             N
@@ -104,11 +104,9 @@ pub fn Hero() -> impl IntoView {
                 </div>
 
                 {/* RIGHT SECTION */}
-                <div class="perspective-wrapper flex-1 flex ">
+                <div class="perspective-wrapper flex-1 justify-center items-center">
                     <div class="dashboard-content">
-                        <div class="bg-none border border-slate-700/70 backdrop-blur-3xl rounded-3xl p-4 shadow-2xl">
                             <Dashboard data=data />
-                        </div>
                     </div>
                 </div>
 
@@ -120,7 +118,7 @@ pub fn Hero() -> impl IntoView {
 #[component]
 fn Dashboard(data: RwSignal<DashboardData>) -> impl IntoView {
     view! {
-            <div class="space-y-2 ">
+            <div class="space-y-2 p-4">
                     <div class="flex  justify-between text-sm mb-4 text-slate-400">
                         <span>DEVICE ACTIVITY</span>
                         <span>24 HOURS</span>

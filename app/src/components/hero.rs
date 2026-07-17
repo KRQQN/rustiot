@@ -23,12 +23,12 @@ pub fn Hero() -> impl IntoView {
     });
 
     view! {
-        <section class="flex-0 flex items-center w-full justify-center">
+        <section class="max-w-screen px-[10rem] hero flex items-center px-8 justify-center mx-auto ">
 
-            <div class="flex flex-col lg:flex-row w-full py-24 mx-8 justify-between items-center z-10 gap-4">
+            <div class="w-full flex flex-col sm:flex-row mx-auto py-24 flex justify-between items-center z-10 gap-4">
 
                 {/* LEFT SECTION */}
-                <div class="flex-1 flex-col justify-center p-4">
+                <div class="flex-1 flex-col justify-center p-8">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-black font-bold text-3xl">
                             N
@@ -104,7 +104,7 @@ pub fn Hero() -> impl IntoView {
                 </div>
 
                 {/* RIGHT SECTION */}
-                <div class="perspective-wrapper flex-1 justify-center items-center">
+                <div class="perspective-wrapper flex-1 flex justify-center">
                     <div class="dashboard-content">
                             <Dashboard data=data />
                     </div>
@@ -118,8 +118,8 @@ pub fn Hero() -> impl IntoView {
 #[component]
 fn Dashboard(data: RwSignal<DashboardData>) -> impl IntoView {
     view! {
-            <div class="space-y-2 p-4">
-                    <div class="flex  justify-between text-sm mb-4 text-slate-400">
+            <div class="space-y-2 p-2">
+                    <div class="flex  justify-around text-sm mb-4 text-slate-400">
                         <span>DEVICE ACTIVITY</span>
                         <span>24 HOURS</span>
                     </div>
@@ -266,11 +266,11 @@ fn Chart() -> impl IntoView {
 
     view! {
         <div class="bg-[#0a1428] rounded-3xl border border-slate-700 p-4 h-full">
-            <div class="flex h-full gap-4">
+            <div class="flex h-full gap-2">
 
-                <div class="flex flex-col justify-between text-xs text-slate-400 py-1 w-10 text-right">
-                    <span>{max_value}</span>
-                    <span>{max_value / 2}</span>
+                <div class="flex flex-col justify-between text-xs text-slate-400 py-1 w-fit text-left">
+                    <p>{max_value}</p>
+                    <p>{max_value / 2}</p>
                     <span>"0"</span>
                 </div>
 

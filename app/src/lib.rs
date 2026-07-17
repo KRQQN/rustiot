@@ -49,7 +49,7 @@ pub fn App() -> impl IntoView {
 fn HomePage() -> impl IntoView {
     view! {
         <div id="hero" class="w-full mx-auto">
-            <div class="lg:max-w-[80rem] mx-auto">
+            <div class="lg:max-w-[80rem] lg:h-screen m-auto content-center">
                 <Hero/>
             </div>
         </div>

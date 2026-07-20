@@ -1,4 +1,4 @@
-use crate::components::charts::BarChart;
+use crate::components::charts::{BarChart, LineChart};
 use leptos::prelude::*;
 
 #[derive(Clone)]
@@ -12,6 +12,13 @@ pub struct DashboardData {
 
 #[component]
 pub fn Dashboard(data: RwSignal<DashboardData>) -> impl IntoView {
+    let (values, set_values) = signal(vec![
+        245.0f32, 378.0, 343.0, 444.0, 555.0, 666.0, 444.0, 344.0, 345.0, 489.0, 645.0, 699.0,
+        945.0, 1189.0,
+    ]);
+
+    let (max_val, set_max_val) = signal(1400.0f32);
+
     view! {
             <div class="space-y-2 p-2">
                     <div class="flex justify-around text-sm mb-4 text-slate-400">
@@ -20,6 +27,9 @@ pub fn Dashboard(data: RwSignal<DashboardData>) -> impl IntoView {
                     </div>
                     <div class="h-[13rem]">
                         <BarChart/>
+                    </div>
+                    <div class="h-[8rem]">
+                        <LineChart values=values max=max_val/>
                     </div>
             <div class="grid grid-cols-[1fr_1fr_0.9fr] gap-3">
         // Trends

@@ -1,175 +1,136 @@
 use chrono::Local;
 use leptos::prelude::*;
 
+use wasm_bindgen::JsCast;
+use web_sys::CanvasRenderingContext2d;
+
 #[component]
-pub fn LineChart() -> impl IntoView {
-    let today = Local::now().date_naive();
+pub fn LineChart(
+    #[prop(into)] values: Signal<Vec<f32>>,
 
-    let labels: Vec<String> = (0..14)
-        .rev()
-        .map(|i| {
-            (today - chrono::Duration::days(i))
-                .format("%m/%d")
-                .to_string()
-        })
-        .collect();
+    #[prop(into, default = Signal::derive(|| 1400.0f32))] max: Signal<f32>,
 
-    let values = vec![
-        245.0, 378.0, 312.0, 489.0, 645.0, 699.0, 945.0, 1189.0, 1056.0, 978.0, 743.0, 892.0,
-        1056.0, 1211.0,
-    ];
+    #[prop(into, default = None)] title: Option<Signal<String>>,
+) -> impl IntoView {
+    let canvas_ref = NodeRef::<leptos::html::Canvas>::new();
 
-    let max = 1400.0;
+    Effect::new(move |_| {
+        let Some(canvas) = canvas_ref.get() else {
+            return;
+        };
 
-    let width = 1000.0;
-    let height = 300.0;
-    let padding = 20.0;
+        let rect = canvas.get_bounding_client_rect();
+        let width = rect.width() as u32;
+        let height = rect.height() as u32;
+        canvas.set_width(width);
+        canvas.set_height(height);
 
-    let step = (width - padding * 2.0) / (values.len() - 1) as f32;
+        let ctx: CanvasRenderingContext2d = canvas
+            .get_context("2d")
+            .unwrap()
+            .unwrap()
+            .dyn_into()
+            .unwrap();
 
-    let points: Vec<(f32, f32)> = values
-        .iter()
-        .enumerate()
-        .map(|(i, value)| {
-            let x = padding + step * i as f32;
+        ctx.clear_rect(0.0, 0.0, width as f64, height as f64);
 
-            let y = height - padding - ((*value / max) * (height - padding * 2.0));
+        let vals = values.get();
+        if vals.is_empty() {
+            return;
+        }
 
-            (x, y)
-        })
-        .collect();
+        let max_val = max.get() as f64;
+        let padding_left = 50.0f64;
+        let padding_bottom = 45.0f64;
+        let w = width as f64;
+        let h = height as f64;
 
-    let path = points
-        .iter()
-        .enumerate()
-        .map(|(i, (x, y))| {
+        ctx.set_fill_style(&"#94a3b8".into());
+        ctx.set_font("8px sans-serif");
+        ctx.set_text_align("right");
+
+        for i in 0..=2 {
+            let value = max_val * (i as f64 / 2.0);
+            let y = h - padding_bottom - (value / max_val) * (h - padding_bottom - 30.0);
+
+            ctx.set_stroke_style(&"#24364E".into());
+            ctx.set_line_width(1.0);
+            ctx.begin_path();
+            ctx.move_to(padding_left - 10.0, y);
+            ctx.line_to(w - 20.0, y);
+            ctx.stroke();
+
+            ctx.fill_text(&value.round().to_string(), padding_left - 15.0, y + 4.0)
+                .ok();
+        }
+
+        ctx.set_stroke_style(&"#18CFF8".into());
+        ctx.set_line_width(3.5);
+        ctx.set_line_join("round");
+        ctx.set_line_cap("round");
+
+        ctx.set_shadow_color("#18CFF8");
+        ctx.set_shadow_blur(15.0);
+
+        ctx.begin_path();
+        for (i, &value) in vals.iter().enumerate() {
+            let x = padding_left
+                + (w - padding_left - 30.0) * (i as f64 / (vals.len().max(2) - 1) as f64);
+            let y = h - padding_bottom - (value as f64 / max_val) * (h - padding_bottom - 30.0);
+
             if i == 0 {
-                format!("M {} {}", x, y)
+                ctx.move_to(x, y);
             } else {
-                format!(" L {} {}", x, y)
+                ctx.line_to(x, y);
             }
-        })
-        .collect::<String>();
+        }
+        ctx.stroke();
+
+        ctx.set_shadow_blur(0.0);
+        for (i, &value) in vals.iter().enumerate() {
+            let x = padding_left
+                + (w - padding_left - 30.0) * (i as f64 / (vals.len().max(2) - 1) as f64);
+            let y = h - padding_bottom - (value as f64 / max_val) * (h - padding_bottom - 30.0);
+
+            ctx.set_fill_style(&"#18CFF8".into());
+            ctx.begin_path();
+            ctx.arc(x, y, 5.0, 0.0, std::f64::consts::TAU).unwrap();
+            ctx.fill();
+
+            ctx.set_fill_style(&"#ffffff".into());
+            ctx.begin_path();
+            ctx.arc(x, y, 2.0, 0.0, std::f64::consts::TAU).unwrap();
+            ctx.fill();
+        }
+
+        ctx.set_fill_style(&"#94a3b8".into());
+        ctx.set_font("8px sans-serif");
+        ctx.set_text_align("center");
+
+        let today = Local::now().date_naive();
+        for (i, _) in vals.iter().enumerate() {
+            let date = today - chrono::Duration::days((vals.len() - 1 - i) as i64);
+            let label = date.format("%m/%d").to_string();
+
+            let x = padding_left
+                + (w - padding_left - 30.0) * (i as f64 / (vals.len().max(2) - 1) as f64);
+            let y = h - padding_bottom + 25.0;
+
+            ctx.fill_text(&label, x, y).ok();
+        }
+    });
 
     view! {
+        <div class="bg-[#0D1628] rounded-[28px] border border-[#223149] p-1 h-full flex flex-col">
+            {title.map(|t| view! { <div class="text-sm  mb-4">{t}</div> })}
 
-        <div class="bg-[#0D1628] rounded-[28px] border border-[#223149] p-5 h-full">
-
-            <div class="flex gap-4 h-full">
-
-                <div class="flex flex-col justify-between text-xs text-slate-500 py-2">
-
-                    <span>{max as i32}</span>
-
-                    <span>{(max / 2.0) as i32}</span>
-
-                    <span>"0"</span>
-
-                </div>
-
-                <div class="flex-1 flex flex-col min-w-0">
-
-                    <div class="relative flex-1">
-
-                        <svg
-                            class="w-full h-full overflow-visible"
-                            viewBox="0 0 1000 300"
-                            preserveAspectRatio="none"
-                        >
-
-                            <defs>
-
-                                <linearGradient id="line-gradient" x1="0%" x2="100%">
-                                    <stop offset="0%" stop-color="#7DE8FF"/>
-                                    <stop offset="100%" stop-color="#18CFF8"/>
-                                </linearGradient>
-
-                                <filter id="glow">
-
-                                    <feGaussianBlur stdDeviation="4" result="blur"/>
-
-                                    <feMerge>
-                                        <feMergeNode in="blur"/>
-                                        <feMergeNode in="SourceGraphic"/>
-                                    </feMerge>
-
-                                </filter>
-
-                            </defs>
-
-                            <line x1="0" y1="20" x2="1000" y2="20"
-                                stroke="#24364E"
-                                stroke-dasharray="4 6"/>
-
-                            <line x1="0" y1="150" x2="1000" y2="150"
-                                stroke="#24364E"
-                                stroke-dasharray="4 6"/>
-
-                            <line x1="0" y1="280" x2="1000" y2="280"
-                                stroke="#24364E"
-                                stroke-dasharray="4 6"/>
-
-                            <path
-                                d=path
-                                fill="none"
-                                stroke="url(#line-gradient)"
-                                stroke-width="4"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                filter="url(#glow)"
-                            />
-
-                            {
-                                points.iter().map(|(x,y)|{
-
-                                    view!{
-
-                                        <>
-                                            <circle
-                                                cx=*x
-                                                cy=*y
-                                                r="8"
-                                                fill="#18CFF8"
-                                                opacity="0.18"
-                                            />
-
-                                            <circle
-                                                cx=*x
-                                                cy=*y
-                                                r="4"
-                                                fill="#8EF2FF"
-                                            />
-                                        </>
-
-                                    }
-
-                                }).collect_view()
-                            }
-
-                        </svg>
-
-                    </div>
-
-                    <div
-                        class="mt-4 grid"
-                        style=format!("grid-template-columns: repeat({}, minmax(0, 1fr));", labels.len())
-                    >
-                        {
-                            labels.iter().map(|label| {
-                                view! {
-                                    <span class="text-center text-[9px] text-slate-500">
-                                        {label.clone()}
-                                    </span>
-                                }
-                            }).collect_view()
-                        }
-                    </div>
-                </div>
-
+            <div class="flex-1 min-h-0 relative">
+                <canvas
+                    node_ref=canvas_ref
+                    class="w-full h-full rounded-xl"
+                />
             </div>
-
         </div>
-
     }
 }
 
@@ -233,7 +194,6 @@ pub fn BarChart() -> impl IntoView {
                         </div>
                     </div>
 
-                    // Labels
                     <div class="mt-3 flex gap-2">
                         {
                             day_labels.iter().map(|label| {

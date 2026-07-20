@@ -34,13 +34,13 @@ pub fn Solutions() -> impl IntoView {
 
                 <div class="mt-20 space-y-10">
 
-                    <SolutionCard
-                        title="Environmental Monitoring"
-                        description="Monitor temperature, humidity and environmental conditions with intelligent alerts and historical analytics."
-                        reverse=false
-                    >
-                        <LineChart/>
-                    </SolutionCard>
+                    // <SolutionCard
+                    //     title="Environmental Monitoring"
+                    //     description="Monitor temperature, humidity and environmental conditions with intelligent alerts and historical analytics."
+                    //     reverse=false
+                    // >
+                    //     <LineChart/>
+                    // </SolutionCard>
 
                     <SolutionCard
                         title="Energy Intelligence"

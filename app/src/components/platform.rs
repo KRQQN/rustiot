@@ -1,5 +1,4 @@
-use super::hero::Dashboard;
-use crate::components::hero::DashboardData;
+use super::dashboard::{Dashboard, DashboardData};
 use leptos::prelude::*;
 
 #[component]

@@ -9,14 +9,18 @@ leptos.workspace = true
 leptos_meta.workspace = true
 leptos_router.workspace = true
 leptos_axum = { workspace = true, optional = true }
-leptos_chart = { version = "0.3", features = ["BarChart"] }
 icons = { version = "0.18", features = ["leptos"] }
+console_error_panic_hook = { version = "0.1", optional = true }
+js-sys = "0.3"
+serde_json = "1"
 wasm-bindgen = "0.2"
+serde-wasm-bindgen = "0.6"
 web-sys = { version = "0.3", features = [
   "Window",
   "Document",
   "HtmlCanvasElement",
   "CanvasRenderingContext2d",
+  "CssStyleDeclaration",
   "HtmlElement",
   "Element",
   "DomRect",
@@ -26,8 +30,10 @@ http.workspace = true
 cfg-if.workspace = true
 thiserror.workspace = true
 chrono = "0.4.45"
+rand = { version = "0.8", features = ["std", "small_rng"] }
+getrandom = { version = "0.2", features = ["js"] }
 
 [features]
 default = []
-hydrate = ["leptos/hydrate"]
+hydrate = ["leptos/hydrate", "dep:console_error_panic_hook"]
 ssr = ["leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:leptos_axum"]

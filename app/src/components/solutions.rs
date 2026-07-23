@@ -1,6 +1,9 @@
 use leptos::prelude::*;
 
-use crate::components::charts::{BarChart, LineChart, NetworkChart, TrackingChart};
+use crate::components::{
+    charts::{NetworkChart, TrackingChart},
+    mock_charts::{BarChartMock, LineChartMock},
+};
 
 #[component]
 pub fn Solutions() -> impl IntoView {
@@ -34,20 +37,20 @@ pub fn Solutions() -> impl IntoView {
 
                 <div class="mt-20 space-y-10">
 
-                    // <SolutionCard
-                    //     title="Environmental Monitoring"
-                    //     description="Monitor temperature, humidity and environmental conditions with intelligent alerts and historical analytics."
-                    //     reverse=false
-                    // >
-                    //     <LineChart/>
-                    // </SolutionCard>
+                    <SolutionCard
+                        title="Environmental Monitoring"
+                        description="Monitor temperature, humidity and environmental conditions with intelligent alerts and historical analytics."
+                        reverse=false
+                    >
+                        <LineChartMock/>
+                    </SolutionCard>
 
                     <SolutionCard
                         title="Energy Intelligence"
                         description="Track power consumption, identify inefficiencies and optimise energy usage across your facilities."
                         reverse=true
                     >
-                        <BarChart/>
+                        <BarChartMock/>
                     </SolutionCard>
 
                     <SolutionCard

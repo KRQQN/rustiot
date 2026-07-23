@@ -1,4 +1,9 @@
-use crate::components::charts::{BarChart, LineChart};
+use crate::components::{
+    charts::{BarChart, DateValuePoint, LineChar},
+    mock_charts::BarChartMock,
+    revenue_chart::RevenueChart,
+};
+use chrono::{Duration, Local};
 use leptos::prelude::*;
 
 #[derive(Clone)]
@@ -11,13 +16,55 @@ pub struct DashboardData {
 }
 
 #[component]
-pub fn Dashboard(data: RwSignal<DashboardData>) -> impl IntoView {
+pub fn Dashboard(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
     let (values, set_values) = signal(vec![
         245.0f32, 378.0, 343.0, 444.0, 555.0, 666.0, 444.0, 344.0, 345.0, 489.0, 645.0, 699.0,
         945.0, 1189.0,
     ]);
 
-    let (max_val, set_max_val) = signal(1400.0f32);
+    let (max_val, set_max_val) = signal(1400.0f64);
+
+    let (chart_data, set_data) = signal({
+        let start = Local::now();
+
+        #[cfg(feature = "ssr")]
+        {
+            (0..5)
+                .map(|i| DateValuePoint {
+                    date: start + Duration::days(-i),
+                    value: 30.0 + (i as f64 * 15.0),
+                })
+                .collect::<Vec<_>>()
+        }
+
+        #[cfg(not(feature = "ssr"))]
+        {
+            use rand::Rng;
+
+            (0..5)
+                .map(|i| DateValuePoint {
+                    date: start + Duration::days(-i),
+                    value: rand::thread_rng().gen_range(0.0..=100.0),
+                })
+                .collect::<Vec<_>>()
+        }
+    });
+
+    let labels = Signal::derive(move || {
+        chart_data
+            .read()
+            .iter()
+            .map(|p| p.date.format("%d %b").to_string())
+            .collect::<Vec<_>>()
+    });
+
+    let chart_values = Signal::derive(move || {
+        chart_data
+            .read()
+            .iter()
+            .map(|p| p.value)
+            .collect::<Vec<f64>>()
+    });
 
     view! {
             <div class="space-y-2 p-2">
@@ -25,12 +72,27 @@ pub fn Dashboard(data: RwSignal<DashboardData>) -> impl IntoView {
                         <span>DEVICE ACTIVITY</span>
                         <span>24 HOURS</span>
                     </div>
+
                     <div class="h-[13rem]">
-                        <BarChart/>
+                        <Show
+                            when=move|| mock
+                            fallback=move || {
+                                view! {
+                                    <BarChart values=chart_values/>
+                                }
+                            }
+                        >
+                            <BarChartMock/>
+                        </Show>
                     </div>
-                    <div class="h-[8rem]">
-                        <LineChart values=values max=max_val/>
+
+                    <div class="fill-white w-full h-[230px]  max-w-[470px]">
+                        <RevenueChart
+                            labels=labels
+                            values=chart_values
+                        />
                     </div>
+
             <div class="grid grid-cols-[1fr_1fr_0.9fr] gap-3">
         // Trends
         <div class="bg-[#111a2d] rounded-2xl px-4 py-3 border border-slate-800">

@@ -1,9 +1,10 @@
+mod charts;
 mod components;
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
-    StaticSegment,
+    SsrMode, StaticSegment,
 };
 
 pub use components::hero::Hero;
@@ -17,6 +18,8 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1"/>
                 <script src="https://cdn.tailwindcss.com"></script>
+                <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+                <script src="/assets/charts.js"></script>
                 <AutoReload options=options.clone()/>
                 <HydrationScripts options/>
                 <MetaTags/>
@@ -40,7 +43,11 @@ pub fn App() -> impl IntoView {
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage/>
+                    <Route
+                        path=StaticSegment("")
+                        view=HomePage
+                        ssr=SsrMode::Async
+                        />
                 </Routes>
             </main>
         </Router>

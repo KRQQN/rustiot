@@ -1,29 +1,47 @@
-use chrono::Local;
+use chrono::{DateTime, Local};
 use leptos::prelude::*;
-
 use wasm_bindgen::JsCast;
-use web_sys::CanvasRenderingContext2d;
+use web_sys::{CanvasRenderingContext2d, HtmlElement};
+
+pub struct DateValuePoint {
+    pub date: DateTime<Local>,
+    pub value: f64,
+}
 
 #[component]
-pub fn LineChart(
-    #[prop(into)] values: Signal<Vec<f32>>,
-
-    #[prop(into, default = Signal::derive(|| 1400.0f32))] max: Signal<f32>,
-
+pub fn BarChart(
+    #[prop(into)] values: Signal<Vec<f64>>,
     #[prop(into, default = None)] title: Option<Signal<String>>,
 ) -> impl IntoView {
     let canvas_ref = NodeRef::<leptos::html::Canvas>::new();
+    let hovered = RwSignal::new(None::<usize>);
+    let max = Signal::derive(move || values.get().iter().copied().fold(0.0, f64::max));
 
     Effect::new(move |_| {
         let Some(canvas) = canvas_ref.get() else {
             return;
         };
 
+        let dpr = web_sys::window().unwrap().device_pixel_ratio();
         let rect = canvas.get_bounding_client_rect();
-        let width = rect.width() as u32;
-        let height = rect.height() as u32;
+        let logical_width = rect.width();
+        let logical_height = rect.height();
+
+        // internal canvas resolution
+        let width = (logical_width * dpr) as u32;
+        let height = (logical_height * dpr) as u32;
         canvas.set_width(width);
         canvas.set_height(height);
+
+        let html: &HtmlElement = canvas.as_ref();
+
+        let _ = html
+            .style()
+            .set_property("height", &format!("{}px", logical_height));
+
+        let _ = html
+            .style()
+            .set_property("width", &format!("{}px", logical_width));
 
         let ctx: CanvasRenderingContext2d = canvas
             .get_context("2d")
@@ -32,102 +50,91 @@ pub fn LineChart(
             .dyn_into()
             .unwrap();
 
-        ctx.clear_rect(0.0, 0.0, width as f64, height as f64);
+        ctx.scale(dpr, dpr).unwrap();
+
+        ctx.clear_rect(0.0, 0.0, rect.width(), rect.height());
 
         let vals = values.get();
         if vals.is_empty() {
             return;
         }
 
-        let max_val = max.get() as f64;
-        let padding_left = 50.0f64;
-        let padding_bottom = 45.0f64;
-        let w = width as f64;
-        let h = height as f64;
+        let max_val = max.get();
+        let padding_left = 48.0;
+        let padding_bottom = 45.0;
+        let w = rect.width();
+        let h = rect.height();
 
-        ctx.set_fill_style(&"#94a3b8".into());
-        ctx.set_font("8px sans-serif");
+        let bar_count = vals.len() as f64;
+        let gap = 8.0;
+        let bar_width = ((w - padding_left - 30.0) / bar_count) - gap;
+
+        // Y labels + grid
+        ctx.set_font("13px Inter, sans-serif");
         ctx.set_text_align("right");
-
         for i in 0..=2 {
-            let value = max_val * (i as f64 / 2.0);
-            let y = h - padding_bottom - (value / max_val) * (h - padding_bottom - 30.0);
+            let val = (max_val * (i as f64 / 2.0)) as i32;
+            let y = h - padding_bottom - (val as f64 / max_val) * (h - padding_bottom - 35.0);
 
-            ctx.set_stroke_style(&"#24364E".into());
+            ctx.set_stroke_style_str("#24364E");
             ctx.set_line_width(1.0);
             ctx.begin_path();
-            ctx.move_to(padding_left - 10.0, y);
+            ctx.move_to(padding_left - 12.0, y);
             ctx.line_to(w - 20.0, y);
             ctx.stroke();
 
-            ctx.fill_text(&value.round().to_string(), padding_left - 15.0, y + 4.0)
+            ctx.set_fill_style_str("#94a3b8");
+            ctx.fill_text(&val.to_string(), padding_left - 18.0, y + 4.0)
                 .ok();
         }
 
-        ctx.set_stroke_style(&"#18CFF8".into());
-        ctx.set_line_width(3.5);
-        ctx.set_line_join("round");
-        ctx.set_line_cap("round");
-
-        ctx.set_shadow_color("#18CFF8");
-        ctx.set_shadow_blur(15.0);
-
-        ctx.begin_path();
+        // Bars
         for (i, &value) in vals.iter().enumerate() {
-            let x = padding_left
-                + (w - padding_left - 30.0) * (i as f64 / (vals.len().max(2) - 1) as f64);
-            let y = h - padding_bottom - (value as f64 / max_val) * (h - padding_bottom - 30.0);
+            let height = ((value / max_val) * (h - padding_bottom - 35.0)).max(12.0);
+            let x = padding_left + (i as f64) * (bar_width + gap);
+            let y = h - padding_bottom - height;
 
-            if i == 0 {
-                ctx.move_to(x, y);
-            } else {
-                ctx.line_to(x, y);
-            }
-        }
-        ctx.stroke();
+            let is_hovered = hovered.get() == Some(i);
 
-        ctx.set_shadow_blur(0.0);
-        for (i, &value) in vals.iter().enumerate() {
-            let x = padding_left
-                + (w - padding_left - 30.0) * (i as f64 / (vals.len().max(2) - 1) as f64);
-            let y = h - padding_bottom - (value as f64 / max_val) * (h - padding_bottom - 30.0);
+            ctx.set_shadow_color(if is_hovered { "#a5f3fc" } else { "#67e8f9" });
+            ctx.set_shadow_blur(if is_hovered { 20.0 } else { 10.0 });
 
-            ctx.set_fill_style(&"#18CFF8".into());
-            ctx.begin_path();
-            ctx.arc(x, y, 5.0, 0.0, std::f64::consts::TAU).unwrap();
-            ctx.fill();
+            ctx.set_fill_style_str(if is_hovered { "#a5f3fc" } else { "#67e8f9" });
+            ctx.fill_rect(x, y, bar_width, height);
 
-            ctx.set_fill_style(&"#ffffff".into());
-            ctx.begin_path();
-            ctx.arc(x, y, 2.0, 0.0, std::f64::consts::TAU).unwrap();
-            ctx.fill();
+            ctx.set_shadow_blur(0.0);
         }
 
-        ctx.set_fill_style(&"#94a3b8".into());
-        ctx.set_font("8px sans-serif");
+        // X labels
+        ctx.set_fill_style_str("#94a3b8");
+        ctx.set_font("10.5px Inter, sans-serif");
         ctx.set_text_align("center");
 
         let today = Local::now().date_naive();
         for (i, _) in vals.iter().enumerate() {
             let date = today - chrono::Duration::days((vals.len() - 1 - i) as i64);
             let label = date.format("%m/%d").to_string();
-
-            let x = padding_left
-                + (w - padding_left - 30.0) * (i as f64 / (vals.len().max(2) - 1) as f64);
-            let y = h - padding_bottom + 25.0;
-
-            ctx.fill_text(&label, x, y).ok();
+            let x = padding_left + (i as f64) * (bar_width + gap) + bar_width / 2.0;
+            ctx.fill_text(&label, x, h - padding_bottom + 28.0).ok();
         }
     });
 
+    let on_mousemove = move |ev: web_sys::MouseEvent| {
+        if let Some(canvas) = canvas_ref.get() {
+            let rect = canvas.get_bounding_client_rect();
+            let _x = ev.client_x() as f64 - rect.left();
+        }
+    };
+
     view! {
-        <div class="bg-[#0D1628] rounded-[28px] border border-[#223149] p-1 h-full flex flex-col">
-            {title.map(|t| view! { <div class="text-sm  mb-4">{t}</div> })}
+        <div class="bg-[#0a1428] rounded-3xl border border-slate-700 p-4 h-full flex flex-col">
+            {title.map(|t| view! { <div class="text-lg font-semibold text-white mb-4 px-1">{t}</div> })}
 
             <div class="flex-1 min-h-0 relative">
                 <canvas
                     node_ref=canvas_ref
                     class="w-full h-full rounded-xl"
+                    on:mousemove=on_mousemove
                 />
             </div>
         </div>
@@ -135,86 +142,8 @@ pub fn LineChart(
 }
 
 #[component]
-pub fn BarChart() -> impl IntoView {
-    let today = Local::now().date_naive();
-
-    let day_labels: Vec<String> = (0..14)
-        .rev()
-        .map(|i| {
-            let date = today - chrono::Duration::days(i);
-            date.format("%m/%d").to_string()
-        })
-        .collect();
-
-    let max_value = 1400;
-
-    let values = vec![
-        245, 378, 312, 489, 645, 699, 945, 1189, 1056, 978, 743, 892, 1056, 1211,
-    ];
-
-    view! {
-        <div class="bg-[#0a1428] rounded-3xl border border-slate-700 p-4 h-full">
-            <div class="flex h-full gap-2">
-
-                <div class="flex flex-col justify-between text-xs text-slate-400 py-1 w-fit text-left">
-                    <p>{max_value}</p>
-                    <p>{max_value / 2}</p>
-                    <span>"0"</span>
-                </div>
-
-                <div class="flex-1 flex flex-col min-w-0">
-
-                    <div class="relative flex-1">
-
-                        <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                            <div class="border-t border-slate-700/70"></div>
-                            <div class="border-t border-slate-700/70"></div>
-                            <div class="border-t border-slate-700/70"></div>
-                        </div>
-
-                        <div class="absolute inset-0 flex items-stretch gap-1">
-                            {
-                                values.iter().map(|value| {
-                                    let height =
-                                        ((*value as f32 / max_value as f32) * 100.0).max(8.0);
-
-                                    view! {
-                                        <div class="flex-1 flex flex-col justify-end items-center h-full">
-                                            <div
-                                                class="w-full rounded-t bg-cyan-200
-                                                       hover:bg-cyan-500 transition-all duration-300
-                                                       shadow-[0_0_15px_#a4f3fc]
-                                                       hover:shadow-[0_0_20px_#1996af]"
-                                                style:height=format!("{height}%")
-                                            />
-                                        </div>
-                                    }
-                                }).collect_view()
-                            }
-                        </div>
-                    </div>
-
-                    <div class="mt-3 flex gap-2">
-                        {
-                            day_labels.iter().map(|label| {
-                                view! {
-                                    <div class="flex-1 text-center text-[8px] text-slate-400">
-                                        {label.clone()}
-                                    </div>
-                                }
-                            }).collect_view()
-                        }
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    }
-}
-
-#[component]
 pub fn NetworkChart() -> impl IntoView {
-    let nodes = vec![
+    let nodes = [
         (50, 50),
         (150, 70),
         (260, 45),
@@ -223,7 +152,7 @@ pub fn NetworkChart() -> impl IntoView {
         (150, 260),
     ];
 
-    let edges = vec![
+    let edges = [
         (0, 1),
         (1, 2),
         (0, 3),
@@ -322,7 +251,7 @@ pub fn TrackingChart() -> impl IntoView {
                 C80 210 120 170 170 180
                 S250 120 260 70";
 
-    let markers = vec![(40, 250), (120, 180), (210, 140), (260, 70)];
+    let markers = [(40, 250), (120, 180), (210, 140), (260, 70)];
 
     view! {
 

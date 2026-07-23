@@ -101,7 +101,7 @@ pub fn Hero() -> impl IntoView {
                                 {/* RIGHT SECTION */}
                                 <div class="perspective-wrapper flex-1 flex justify-center">
                                     <div class="dashboard-content">
-                                        <Dashboard data=data />
+                                        <Dashboard data=data mock=true />
                                     </div>
                                 </div>
                             </div>

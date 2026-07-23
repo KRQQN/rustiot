@@ -93,7 +93,7 @@ pub fn Platform() -> impl IntoView {
                     <div class="order-1 lg:order-2 flex justify-center">
 
                         <div class="w-full max-w-xl xl:max-w-2xl scale-90 sm:scale-100 lg:scale-105">
-                            <Dashboard data=data/>
+                            <Dashboard data=data mock=true/>
                         </div>
 
                     </div>

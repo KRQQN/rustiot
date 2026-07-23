@@ -5,6 +5,7 @@ use leptos::prelude::*;
 
 #[component]
 pub fn Hero() -> impl IntoView {
+    // todo -> move this dummy to dashboard
     let data = RwSignal::new(DashboardData {
         active_devices: 1248,
         data_points: "2.4M".to_string(),

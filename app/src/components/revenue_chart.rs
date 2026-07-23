@@ -16,6 +16,8 @@ pub fn RevenueChart(
 
     #[cfg(not(feature = "ssr"))]
     {
+        use leptos::logging;
+
         // Create once
         Effect::new(move |_| {
             let Some(div) = node.get() else {
@@ -38,7 +40,15 @@ pub fn RevenueChart(
                 "backgroundColor": "transparent",
 
                 "tooltip": {
-                    "trigger": "axis"
+                    "trigger": "axis",
+                    "backgroundColor": "rgba(30,30,30,0.85)",
+                    "borderRadius": 12,
+                    "borderWidth": 0,
+                    "padding": 12,
+                    "textStyle": {
+                        "fontSize": 14,
+                        "color": "#fff"
+                    }
                 },
 
                 "grid": {
@@ -52,7 +62,6 @@ pub fn RevenueChart(
                     "type": "category",
                     "boundaryGap": false,
                     "data": labels.get(),
-                    "reverse": true,
                 },
 
                 "yAxis": {
@@ -64,6 +73,25 @@ pub fn RevenueChart(
                     "type": "line",
                     "smooth": true,
                     "data": values.get(),
+                    "areaStyle": {
+                        "color": {
+                            "type": "linear",
+                            "x": 0,
+                            "y": 0,
+                            "x2": 0,
+                            "y2": 1,
+                            "colorStops": [
+                            { "offset": 0, "color": "rgba(99,102,241,0.4)" },
+                                { "offset": 1, "color": "rgba(99,102,241,0)" }
+                            ]
+                        }
+                    },
+                    "lineStyle": {
+                        "width": 3,
+                        "shadowBlur": 15,
+                        "shadowColor": "rgba(99,102,241,0.7)"
+                    },
+
                 }]
             });
 

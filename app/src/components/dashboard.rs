@@ -19,8 +19,8 @@ pub struct DashboardData {
 #[component]
 pub fn Dashboard(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
     let (values, set_values) = signal(vec![
-        245.0f32, 378.0, 343.0, 444.0, 555.0, 666.0, 444.0, 344.0, 345.0, 489.0, 645.0, 699.0,
-        945.0, 1189.0,
+        245.3f64, 378.1, 343.1, 444.0, 555.0, 666.1, 444.1, 344.1, 345.1, 489.1, 645.3, 699.3,
+        945.3, 1189.3,
     ]);
 
     let (chart_data, set_data) = signal({
@@ -30,8 +30,8 @@ pub fn Dashboard(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
         {
             (0..5)
                 .map(|i| DateValuePoint {
-                    date: start + Duration::days(-i),
-                    value: 30.0 + (i as f64 * 15.0),
+                    date: start - Duration::days(i),
+                    value: (30.0 + (i as f64 * 15.0)),
                 })
                 .collect::<Vec<_>>()
         }
@@ -42,29 +42,33 @@ pub fn Dashboard(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
 
             (0..5)
                 .map(|i| DateValuePoint {
-                    date: start + Duration::days(-i),
-                    value: rand::thread_rng().gen_range(0.0..=100.0),
+                    date: start - Duration::days(i),
+                    value: (rand::thread_rng().gen_range(0.0_f64..=100.0_f64) * 10.0).round()
+                        / 10.0,
                 })
                 .collect::<Vec<_>>()
         }
     });
 
     let labels = Signal::derive(move || {
-        chart_data
+        let mut labels = chart_data
             .read()
             .iter()
             .map(|p| p.date.format("%d %b").to_string())
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+        labels.reverse();
+        labels
     });
 
     let chart_values = Signal::derive(move || {
-        chart_data
+        let mut values = chart_data
             .read()
             .iter()
             .map(|p| p.value)
-            .collect::<Vec<f64>>()
+            .collect::<Vec<_>>();
+        values.reverse();
+        values
     });
-
     view! {
             <div class="space-y-2 p-2">
                     <div class="flex justify-around text-sm mb-4 text-slate-400">

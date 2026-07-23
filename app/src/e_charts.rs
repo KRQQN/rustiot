@@ -1,3 +1,4 @@
+#![cfg_attr(feature = "ssr", allow(unused_variables, unused_imports, dead_code))]
 use js_sys::Object;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlDivElement;
@@ -22,19 +23,16 @@ pub struct EChart {
 }
 
 impl EChart {
-    /// Creates a new chart attached to the HTML element with the given ID.
     pub fn new(div: HtmlDivElement, options: &JsValue) -> Self {
         Self {
             inner: create_chart(div, options),
         }
     }
 
-    /// Replaces or merges the chart options.
     pub fn update(&self, options: &JsValue) {
         update_chart(&self.inner, options);
     }
 
-    /// Resizes the chart to match its container.
     pub fn resize(&self) {
         resize_chart(&self.inner);
     }

@@ -1,4 +1,5 @@
-use crate::charts::EChart;
+#![cfg_attr(feature = "ssr", allow(unused_variables, unused_imports, dead_code))]
+use crate::e_charts::EChart;
 use leptos::html;
 use leptos::prelude::*;
 use serde_json::json;

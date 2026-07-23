@@ -1,5 +1,6 @@
+#![cfg_attr(feature = "ssr", allow(unused_variables))]
 use crate::components::{
-    charts::{BarChart, DateValuePoint, LineChar},
+    charts::{BarChart, DateValuePoint},
     mock_charts::BarChartMock,
     revenue_chart::RevenueChart,
 };
@@ -21,8 +22,6 @@ pub fn Dashboard(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
         245.0f32, 378.0, 343.0, 444.0, 555.0, 666.0, 444.0, 344.0, 345.0, 489.0, 645.0, 699.0,
         945.0, 1189.0,
     ]);
-
-    let (max_val, set_max_val) = signal(1400.0f64);
 
     let (chart_data, set_data) = signal({
         let start = Local::now();

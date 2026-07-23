@@ -109,20 +109,3 @@ pub fn Hero() -> impl IntoView {
                     </section>
                 }
 }
-
-#[component]
-fn Metric<F1, F2>(label: &'static str, value: F1, growth: F2) -> impl IntoView
-where
-    F1: Fn() -> String + Send + 'static,
-    F2: Fn() -> f32 + Send + 'static,
-{
-    view! {
-        <div class="bg-[#1a2338] rounded-3xl p-1">
-            <p class="text-slate-400 text-sm">{label}</p>
-            <p class="text-xl font-semibold text-white mt-1">{move || value()}</p>
-            <p class="text-emerald-400 text-sm font-medium mt-1">
-                "↑ " {move || format!("{:.1}%", growth())}
-            </p>
-        </div>
-    }
-}

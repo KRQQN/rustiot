@@ -1,8 +1,8 @@
 #![cfg_attr(feature = "ssr", allow(unused_variables))]
 use crate::components::{
-    charts::{BarChart, DateValuePoint},
+    charts::DateValuePoint,
+    js_charts::{EBarChart, ELineChart},
     mock_charts::BarChartMock,
-    revenue_chart::RevenueChart,
 };
 use chrono::{Duration, Local};
 use leptos::prelude::*;
@@ -28,7 +28,7 @@ pub fn Dashboard(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
 
         #[cfg(feature = "ssr")]
         {
-            (0..5)
+            (0..10)
                 .map(|i| DateValuePoint {
                     date: start - Duration::days(i),
                     value: (30.0 + (i as f64 * 15.0)),
@@ -40,7 +40,7 @@ pub fn Dashboard(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
         {
             use rand::Rng;
 
-            (0..5)
+            (0..10)
                 .map(|i| DateValuePoint {
                     date: start - Duration::days(i),
                     value: (rand::thread_rng().gen_range(0.0_f64..=100.0_f64) * 10.0).round()
@@ -70,27 +70,23 @@ pub fn Dashboard(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
         values
     });
     view! {
-            <div class="space-y-2 p-2">
-                    <div class="flex justify-around text-sm mb-4 text-slate-400">
-                        <span>DEVICE ACTIVITY</span>
-                        <span>24 HOURS</span>
-                    </div>
+            <div class="space-y-1 p-2">
 
-                    <div class="h-[13rem]">
+                    <div class="h-[13rem] w-full">
                         <Show
                             when=move|| mock
                             fallback=move || {
                                 view! {
-                                    <BarChart values=chart_values/>
+                                    <BarChartMock/>
                                 }
                             }
                         >
-                            <BarChartMock/>
+                            <EBarChart labels=labels values=chart_values/>
                         </Show>
                     </div>
 
-                    <div class="fill-white w-full h-[230px]  max-w-[470px]">
-                        <RevenueChart
+                    <div class="fill-white w-full h-[230px] ">
+                        <ELineChart
                             labels=labels
                             values=chart_values
                         />

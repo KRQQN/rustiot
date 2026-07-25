@@ -9,7 +9,8 @@ use leptos_router::{
 
 pub use components::hero::Hero;
 
-use crate::components::{platform::Platform, problems::Problems, solutions::Solutions};
+use crate::components::{challenges::Problems, platform::Platform, solutions::Solutions};
+
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
         <!DOCTYPE html>

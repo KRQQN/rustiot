@@ -1,0 +1,10 @@
+[package]
+name = "middleware"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.53.1", features = ["full"] }
+anyhow = "1"
+dotenvy = "0.15.7"
+rumqttc = "0.25.1"

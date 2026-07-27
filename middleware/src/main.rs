@@ -1,4 +1,6 @@
 mod config;
+mod domains;
+mod handlers;
 mod infrastructure;
 
 use crate::{config::loader::Config, infrastructure::mqtt::MqttClient};

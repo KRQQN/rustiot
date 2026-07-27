@@ -1,9 +1,10 @@
 use std::{env, time::Duration};
 
-use crate::config::models::MqttConfig;
+use crate::config::models::{InfluxConfig, MqttConfig};
 
 pub struct Config {
     pub mqtt: MqttConfig,
+    pub influx: InfluxConfig,
 }
 
 impl Config {
@@ -21,6 +22,13 @@ impl Config {
             ),
         };
 
-        Ok(Self { mqtt })
+        let influx = InfluxConfig {
+            host: env::var("INFLUX_HOST")?,
+            port: env::var("INFLUX_PORT")?.parse()?,
+            database: env::var("INFLUX_DATABASE")?,
+            token: env::var("INFLUX_TOKEN")?,
+        };
+
+        Ok(Self { mqtt, influx })
     }
 }

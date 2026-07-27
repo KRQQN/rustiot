@@ -8,3 +8,10 @@ pub struct MqttConfig {
     pub password: Option<String>,
     pub keep_alive: Duration,
 }
+
+pub struct InfluxConfig {
+    pub host: String,
+    pub port: u16,
+    pub database: String,
+    pub token: String,
+}

@@ -1,11 +1,15 @@
-use crate::domains::mqtt_messages::StatusMessage;
+use std::sync::Arc;
+
+use crate::{domains::mqtt_messages::StatusMessage, infrastructure::redis::RedisClient};
 use anyhow::Result;
 
-pub struct StatusHandler;
+pub struct StatusHandler {
+    redis: Arc<RedisClient>,
+}
 
 impl StatusHandler {
-    pub fn new() -> Self {
-        Self
+    pub fn new(redis: Arc<RedisClient>) -> Self {
+        Self { redis }
     }
 
     pub async fn handle(&self, device_id: &str, payload: &[u8]) -> Result<()> {

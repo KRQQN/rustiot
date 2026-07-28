@@ -19,7 +19,7 @@ impl RedisClient {
 
     pub async fn hset(&self, key: &str, status: &str, value: &str) -> Result<()> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
-        let _: () = conn.hset(&key, &status, &value).await?;
+        let _: () = conn.hset(key, status, value).await?;
         Ok(())
     }
 

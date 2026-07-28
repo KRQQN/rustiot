@@ -1,15 +1,16 @@
 use anyhow::Result;
-use rumqttc::{AsyncClient, Event, EventLoop, Incoming, MqttOptions, Publish, QoS};
+use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, QoS};
 
-use crate::{config::models::MqttConfig, domains::topic::Topic, handlers};
+use crate::{config::models::MqttConfig, dispatchers::mqtt_dispatcher::Dispatcher};
 
 pub struct MqttClient {
     client: AsyncClient,
     eventloop: EventLoop,
+    dispatcher: Dispatcher,
 }
 
 impl MqttClient {
-    pub async fn new(config: &MqttConfig) -> Result<Self> {
+    pub async fn new(config: &MqttConfig, dispatcher: Dispatcher) -> Result<Self> {
         let mut options = MqttOptions::new(&config.client_id, &config.host, config.port);
 
         options.set_keep_alive(config.keep_alive);
@@ -20,7 +21,11 @@ impl MqttClient {
 
         let (client, eventloop) = AsyncClient::new(options, 100);
 
-        Ok(Self { client, eventloop })
+        Ok(Self {
+            client,
+            eventloop,
+            dispatcher,
+        })
     }
 
     pub async fn run(mut self) -> Result<()> {
@@ -48,34 +53,7 @@ impl MqttClient {
     }
 
     async fn handle_event(&self, event: Event) -> Result<()> {
-        match event {
-            Event::Incoming(Incoming::Publish(packet)) => {
-                self.handle_publish(packet).await?;
-            }
-
-            Event::Incoming(Incoming::ConnAck(_)) => {
-                println!("Connected");
-            }
-
-            _ => {}
-        }
-
-        Ok(())
-    }
-
-    async fn handle_publish(&self, packet: Publish) -> Result<()> {
-        match Topic::parse(&packet.topic) {
-            Topic::DeviceTelemetry { device_id } => {
-                handlers::telemetry::handle(device_id, &packet.payload).await?;
-            }
-
-            Topic::DeviceStatus { device_id } => {
-                // handlers::status::handle(...)
-            }
-
-            Topic::Unknown => {}
-        }
-
+        self.dispatcher.dispatch(event).await?;
         Ok(())
     }
 }

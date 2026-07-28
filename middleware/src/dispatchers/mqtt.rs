@@ -1,18 +1,19 @@
 use anyhow::{Ok, Result};
 use rumqttc::{Event, Incoming};
 
-use crate::{domains::topic::Topic, handlers::telemetry::TelemetryHandler};
+use crate::{
+    domains::topic::Topic,
+    handlers::{status::StatusHandler, telemetry::TelemetryHandler},
+};
 
 pub struct Dispatcher {
     telemetry: TelemetryHandler,
+    status: StatusHandler,
 }
 
 impl Dispatcher {
-    pub fn new(telemetry: TelemetryHandler) -> Self {
-        Self {
-            telemetry,
-            //status,
-        }
+    pub fn new(telemetry: TelemetryHandler, status: StatusHandler) -> Self {
+        Self { telemetry, status }
     }
 
     pub async fn dispatch(&self, event: Event) -> Result<()> {
@@ -23,14 +24,14 @@ impl Dispatcher {
                 }
 
                 Topic::DeviceStatus { device_id } => {
-                    //self.status.process(device_id, payload).await,
+                    self.status.handle(device_id, &packet.payload).await?;
                 }
 
                 Topic::Unknown => {}
             },
 
             Event::Incoming(Incoming::ConnAck(_)) => {
-                println!("Connected");
+                println!("[MQTT] Connected");
             }
 
             _ => {}

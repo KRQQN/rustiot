@@ -1,7 +1,7 @@
 use anyhow::Result;
 use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, QoS};
 
-use crate::{config::models::MqttConfig, dispatchers::mqtt_dispatcher::Dispatcher};
+use crate::{config::models::MqttConfig, dispatchers::mqtt::Dispatcher};
 
 pub struct MqttClient {
     client: AsyncClient,
@@ -31,7 +31,7 @@ impl MqttClient {
     pub async fn run(mut self) -> Result<()> {
         self.subscribe().await?;
 
-        println!("Listening for telemetry");
+        println!("Listening for events..");
 
         loop {
             let event = self.eventloop.poll().await?;

@@ -17,8 +17,10 @@ impl StatusHandler {
             return Ok(());
         };
 
+        self.redis
+            .hset(device_id, &message.status, &message.value)
+            .await?;
         println!("Device id: {}\nPayload: {:?}", device_id, message);
-
         Ok(())
     }
 

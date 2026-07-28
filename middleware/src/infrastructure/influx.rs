@@ -27,14 +27,8 @@ impl InfluxClient {
         Ok(Self { client })
     }
 
-    pub async fn test(&self) -> Result<()> {
-        let point = Point::new("telemetry")
-            .tag("robot", "123")
-            .field("value", 42.0_f64);
-
-        self.client.write(vec![point]).await?;
-
-        println!("Write successful!");
+    pub async fn write(&self, points: Vec<Point>) -> Result<()> {
+        self.client.write(points).await?;
         Ok(())
     }
 }

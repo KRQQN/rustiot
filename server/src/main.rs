@@ -1,17 +1,21 @@
+mod infrastructure;
+mod state;
+
+use app::*;
 use axum::Router;
+use infrastructure::sqlx;
+use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
-use app::*;
-use leptos::logging::log;
 
 #[tokio::main]
-async fn main() {
-
+async fn main() -> Result<(), Error> {
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
     let leptos_options = conf.leptos_options;
     // Generate the list of routes in your Leptos App
     let routes = generate_route_list(App);
+    let sql_db = sqlx::connect("postgres://leptos:leptos@localhost:5432/leptos").await?;
 
     let app = Router::new()
         .leptos_routes(&leptos_options, routes, {
@@ -28,4 +32,6 @@ async fn main() {
     axum::serve(listener, app.into_make_service())
         .await
         .unwrap();
+
+    Ok(())
 }

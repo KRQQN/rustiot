@@ -7,8 +7,15 @@ edition = "2021"
 
 [dependencies]
 app = { path = "../app", default-features = false, features = ["ssr"] }
-leptos = { workspace = true, features = [ "ssr" ]}
+leptos = { workspace = true, features = ["ssr"] }
 leptos_axum.workspace = true
+sqlx = { version = "0.9", features = [
+  "runtime-tokio",
+  "postgres",
+  "uuid",
+  "chrono",
+  "macros",
+] }
 
 axum.workspace = true
 simple_logger.workspace = true

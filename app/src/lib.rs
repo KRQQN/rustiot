@@ -1,5 +1,7 @@
 mod components;
 mod e_charts;
+mod pages;
+pub mod server_fns;
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -8,6 +10,7 @@ use leptos_router::{
 };
 
 pub use components::hero::Hero;
+pub use pages::login_home::LoggedInHomePage;
 
 use crate::components::{challenges::Problems, platform::Platform, solutions::Solutions};
 
@@ -44,6 +47,11 @@ pub fn App() -> impl IntoView {
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
+                    <Route
+                        path=StaticSegment("/register")
+                        view=LoggedInHomePage
+                        ssr=SsrMode::Async
+                        />
                     <Route
                         path=StaticSegment("")
                         view=HomePage

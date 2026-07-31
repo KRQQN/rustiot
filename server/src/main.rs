@@ -1,5 +1,8 @@
+mod auth;
+
+use crate::auth::middleware::auth_middleware;
 use app::*;
-use axum::Router;
+use axum::{middleware, Router};
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
@@ -25,7 +28,7 @@ async fn main() -> Result<(), Error> {
 
     let pool_for_server_fns = pg_pool.clone();
     let pool_for_routes = pg_pool.clone();
-    app::server_fns::init_pool(pg_pool.clone());
+
     let app = Router::new()
         .route(
             "/api/{*fn_name}",
@@ -50,6 +53,7 @@ async fn main() -> Result<(), Error> {
                 move || shell(leptos_options.clone())
             },
         )
+        .layer(middleware::from_fn(auth_middleware))
         .fallback(leptos_axum::file_and_error_handler(shell))
         .with_state(leptos_options);
 

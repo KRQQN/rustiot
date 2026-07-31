@@ -9,10 +9,15 @@ edition = "2021"
 app = { path = "../app", default-features = false, features = ["ssr"] }
 leptos = { workspace = true, features = ["ssr"] }
 leptos_axum.workspace = true
+argon2 = "0.5"
+chrono = "0.4"
+uuid = { version = "1", features = ["v4", "serde"] }
 sqlx = { version = "0.9", features = ["runtime-tokio", "postgres", "uuid"] }
+jsonwebtoken = "11.0"
 axum.workspace = true
 simple_logger.workspace = true
 tokio.workspace = true
 tower.workspace = true
 tower-http.workspace = true
 log.workspace = true
+serde.workspace = true

@@ -1,13 +1,12 @@
-use std::{env, sync::OnceLock};
-
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
+use std::{env, sync::OnceLock};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: i64,
+    pub sub: Uuid,
     pub email: String,
     pub jti: String,
     pub exp: usize,
@@ -32,7 +31,7 @@ fn decoding_key() -> &'static DecodingKey {
     })
 }
 
-pub fn create(user_id: i64, email: impl Into<String>) -> jsonwebtoken::errors::Result<String> {
+pub fn create(user_id: Uuid, email: impl Into<String>) -> jsonwebtoken::errors::Result<String> {
     let claims = Claims {
         sub: user_id,
         email: email.into(),

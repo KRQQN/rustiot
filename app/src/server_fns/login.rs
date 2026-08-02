@@ -10,6 +10,7 @@ pub async fn login(email: String, password: String) -> Result<(), ServerFnError>
         use leptos_axum::extract;
         use sqlx;
         use tower_cookies::{Cookie, Cookies};
+        use uuid::Uuid;
 
         use crate::structs::app_state::AppState;
 
@@ -22,7 +23,7 @@ pub async fn login(email: String, password: String) -> Result<(), ServerFnError>
 
         let app_state = expect_context::<AppState>();
 
-        let row: Option<(i64, String)> =
+        let row: Option<(Uuid, String)> =
             sqlx::query_as("SELECT id, password_hash FROM users WHERE email = $1")
                 .bind(&email)
                 .fetch_optional(&app_state.pg_pool)

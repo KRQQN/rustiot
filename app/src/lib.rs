@@ -2,6 +2,8 @@ mod components;
 mod e_charts;
 mod pages;
 pub mod server_fns;
+mod structs;
+
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -11,6 +13,7 @@ use leptos_router::{
 
 pub use components::hero::Hero;
 pub use pages::login_home::LoggedInHomePage;
+pub use structs::app_state::AppState;
 
 use crate::components::{challenges::Problems, platform::Platform, solutions::Solutions};
 

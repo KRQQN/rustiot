@@ -16,4 +16,5 @@ pub fn pool() -> &'static PgPool {
     DB_POOL.get().expect("pool not initialized")
 }
 
+pub mod login;
 pub mod register;

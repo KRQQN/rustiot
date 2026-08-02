@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["app", "frontend", "middleware", "server"]
+members = ["app", "frontend", "middleware", "server", "shared"]
 
 # need to be applied only to wasm build
 [profile.release]
@@ -14,8 +14,7 @@ leptos_meta = { version = "0.8.2" }
 leptos_router = { version = "0.8.2", features = ["nightly"] }
 leptos_axum = { version = "0.8.2" }
 serde = { version = "1", features = ["derive"] }
-
-axum = "0.8.4"
+axum = { version = "0.8", features = ["macros"] }
 cfg-if = "1.0.0"
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
@@ -27,6 +26,12 @@ tokio = { version = "1.45.0", features = ["full"] }
 tower = { version = "0.5.2", features = ["full"] }
 tower-http = { version = "0.6.4", features = ["full"] }
 wasm-bindgen = "0.2.106"
+sqlx = { version = "0.9", features = [
+  "runtime-tokio",
+  "postgres",
+  "uuid",
+  "chrono",
+] }
 
 # See https://github.com/leptos-rs/cargo-leptos for documentation of all the parameters.
 

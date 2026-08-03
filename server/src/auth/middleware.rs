@@ -1,11 +1,13 @@
 use app::AppState;
 use axum::{
     extract::{Request, State},
-    http::StatusCode,
     middleware::Next,
-    response::{IntoResponse, Response},
+    response::Response,
 };
-use shared::jwt::{self, Claims};
+use shared::{
+    dto::CurrentUser,
+    jwt::{self},
+};
 use tower_cookies::{Cookie, Cookies};
 
 const SESSION_COOKIE: &str = "session";
@@ -28,12 +30,13 @@ pub async fn auth_middleware(
         },
         None => None,
     };
-    dbg!("token!: {}", &token);
 
-    // todo: Change to shared type
     if let Some(claims) = claims {
-        dbg!("claims!: {}", &claims);
-        req.extensions_mut().insert(claims);
+        let current_user = CurrentUser {
+            user_id: claims.sub,
+            email: claims.email,
+        };
+        req.extensions_mut().insert(current_user);
     }
 
     next.run(req).await

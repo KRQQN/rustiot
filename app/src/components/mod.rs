@@ -1,8 +1,6 @@
 pub mod challenges;
 pub mod charts;
-pub mod dad_event_handler;
 pub mod dashboard;
-pub mod drag_n_drop;
 pub mod hero;
 pub mod js_charts;
 pub mod login_form;

@@ -1,4 +1,4 @@
-use crate::components::dashboard::{Dashboard, DashboardData};
+use crate::components::dashboard_example::{DashboardData, DashboardExample};
 use icons::{ChartColumn, Crosshair, Eye, ShieldCheck};
 use leptos::logging::log;
 use leptos::prelude::*;
@@ -101,7 +101,7 @@ pub fn Hero() -> impl IntoView {
                         {/* RIGHT SECTION */}
                         <div class="perspective-wrapper flex-1 flex justify-center">
                             <div class="dashboard-content">
-                                <Dashboard data=data mock=true />
+                                <DashboardExample data=data mock=true />
                             </div>
                         </div>
                     </div>

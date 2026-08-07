@@ -1,6 +1,5 @@
-use crate::components::js_charts::{ECalendarHeatmap, ETreeChart};
+use crate::components::js_charts::ETreeChart;
 
-use super::dashboard::DashboardData;
 use leptos::prelude::*;
 use serde_json::json;
 

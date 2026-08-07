@@ -17,7 +17,7 @@ pub struct DashboardData {
 }
 
 #[component]
-pub fn Dashboard(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
+pub fn DashboardExample(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
     let (values, set_values) = signal(vec![
         245.3f64, 378.1, 343.1, 444.0, 555.0, 666.1, 444.1, 344.1, 345.1, 489.1, 645.3, 699.3,
         945.3, 1189.3,

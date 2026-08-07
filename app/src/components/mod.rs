@@ -1,5 +1,6 @@
 pub mod challenges;
 pub mod charts;
+pub mod dashboard;
 pub mod dashboard_example;
 pub mod hero;
 pub mod js_charts;

@@ -1,5 +1,6 @@
 use crate::{
     components::{
+        dashboard::panel_placer::{PanelLayout, PanelPlacer},
         js_charts::{EBarChart, ECalendarHeatmap, ELineChart},
         side_menu::SideMenu,
     },
@@ -23,83 +24,14 @@ pub struct PanelMeta {
     pub content: PanelContent,
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct PanelLayout {
-    pub x: f64,
-    pub y: f64,
-    pub w: f64,
-    pub h: f64,
-}
-
-const GRID_SIZE: f64 = 20.0;
-const MARGIN: f64 = 10.0;
-
-// TODO: Separate out helpers
-fn snap(value: f64) -> f64 {
-    (value / GRID_SIZE).round() * GRID_SIZE
-}
-
-fn overlaps(a: &PanelLayout, b: &PanelLayout) -> bool {
-    let ax2 = a.x + a.w + MARGIN;
-    let ay2 = a.y + a.h + MARGIN;
-    let bx2 = b.x + b.w + MARGIN;
-    let by2 = b.y + b.h + MARGIN;
-    a.x < bx2 && ax2 > b.x && a.y < by2 && ay2 > b.y
-}
-
-fn find_nearest_free(
-    id: &str,
-    layout: &PanelLayout,
-    layouts: &HashMap<String, PanelLayout>,
-) -> (f64, f64) {
-    let others: Vec<&PanelLayout> = layouts
-        .iter()
-        .filter(|(other_id, _)| *other_id != id)
-        .map(|(_, l)| l)
-        .collect();
-
-    if others.iter().all(|o| !overlaps(layout, o)) {
-        return (layout.x, layout.y);
-    }
-
-    let max_steps = 40;
-    for step in 1..=max_steps {
-        let dist = step as f64 * GRID_SIZE;
-
-        let candidates = [
-            (layout.x + dist, layout.y),
-            (layout.x - dist, layout.y),
-            (layout.x, layout.y + dist),
-            (layout.x, layout.y - dist),
-            (layout.x + dist, layout.y + dist),
-            (layout.x + dist, layout.y - dist),
-            (layout.x - dist, layout.y + dist),
-            (layout.x - dist, layout.y - dist),
-        ];
-
-        for (cx, cy) in candidates {
-            let test = PanelLayout {
-                x: snap(cx.max(0.0)),
-                y: snap(cy.max(0.0)),
-                w: layout.w,
-                h: layout.h,
-            };
-            if others.iter().all(|o| !overlaps(&test, o)) {
-                return (test.x, test.y);
-            }
-        }
-    }
-
-    (snap(layout.x.max(0.0)), snap(layout.y.max(0.0)))
-}
-
 #[component]
 pub fn DashboardArea() -> impl IntoView {
     let year = Signal::derive(move || "2026".to_string());
-
     let cdata = Signal::derive(data::dummy::calendar_heatmap_data);
-
     let (chart_data, _) = signal(data::dummy::chart_data());
+
+    const GRID_SIZE: f64 = 20.0;
+    const MARGIN: f64 = 10.0;
 
     let labels = Signal::derive(move || {
         let mut labels = chart_data
@@ -229,14 +161,14 @@ pub fn DashboardArea() -> impl IntoView {
                     if let Some((id, _, _, _, _)) = resizing.get() {
                         set_layouts.update(|map| {
                             if let Some(l) = map.get_mut(&id) {
-                                l.w = snap(l.w);
-                                l.h = snap(l.h);
+                                l.w = PanelPlacer::snap(l.w, GRID_SIZE);
+                                l.h = PanelPlacer::snap(l.h, GRID_SIZE);
                             }
                         });
 
                         set_layouts.update(|map| {
                             if let Some(layout) = map.get(&id).cloned() {
-                                let (fx, fy) = find_nearest_free(&id, &layout, map);
+                                let (fx, fy) = PanelPlacer::find_nearest_free(&id, &layout, map, GRID_SIZE, MARGIN);
                                 if let Some(l) = map.get_mut(&id) {
                                     l.x = fx;
                                     l.y = fy;
@@ -252,7 +184,7 @@ pub fn DashboardArea() -> impl IntoView {
 
                     set_layouts.update(|map| {
                         if let Some(layout) = map.get(&id).cloned() {
-                            let (fx, fy) = find_nearest_free(&id, &layout, map);
+                            let (fx, fy) = PanelPlacer::find_nearest_free(&id, &layout, map, GRID_SIZE,MARGIN);
                             if let Some(l) = map.get_mut(&id) {
                                 l.x = fx;
                                 l.y = fy;
@@ -266,14 +198,14 @@ pub fn DashboardArea() -> impl IntoView {
                     if let Some((id, _, _, _, _)) = resizing.get() {
                         set_layouts.update(|map| {
                             if let Some(l) = map.get_mut(&id) {
-                                l.w = snap(l.w);
-                                l.h = snap(l.h);
+                                l.w = PanelPlacer::snap(l.w,GRID_SIZE);
+                                l.h = PanelPlacer::snap(l.h, GRID_SIZE);
                             }
                         });
 
                         set_layouts.update(|map| {
                             if let Some(layout) = map.get(&id).cloned() {
-                                let (fx, fy) = find_nearest_free(&id, &layout, map);
+                                let (fx, fy) = PanelPlacer::find_nearest_free(&id, &layout, map,GRID_SIZE, MARGIN);
                                 if let Some(l) = map.get_mut(&id) {
                                     l.x = fx;
                                     l.y = fy;
@@ -289,7 +221,7 @@ pub fn DashboardArea() -> impl IntoView {
 
                     set_layouts.update(|map| {
                         if let Some(layout) = map.get(&id).cloned() {
-                            let (fx, fy) = find_nearest_free(&id, &layout, map);
+                            let (fx, fy) = PanelPlacer::find_nearest_free(&id, &layout, map,GRID_SIZE, MARGIN);
                             if let Some(l) = map.get_mut(&id) {
                                 l.x = fx;
                                 l.y = fy;

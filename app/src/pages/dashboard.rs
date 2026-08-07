@@ -1,6 +1,9 @@
 use crate::{
     components::{
-        dashboard::panel_placer::{PanelLayout, PanelPlacer},
+        dashboard::{
+            interaction_handler::InteractionHandler,
+            panel_placer::{PanelLayout, PanelPlacer},
+        },
         js_charts::{EBarChart, ECalendarHeatmap, ELineChart},
         side_menu::SideMenu,
     },
@@ -113,7 +116,6 @@ pub fn DashboardArea() -> impl IntoView {
     view! {
         <div class="flex min-h-screen bg-slate-100">
             <SideMenu />
-
             <div
                 node_ref=canvas_ref
                 class="flex-1 overflow-auto p-6 relative w-full min-h-screen bg-neutral-900 select-none"
@@ -123,116 +125,46 @@ pub fn DashboardArea() -> impl IntoView {
                         linear-gradient(to bottom, #333 1px, transparent 1px); \
                      background-size: {GRID_SIZE}px {GRID_SIZE}px;"
                 )
-                // TODO: Separate event-handlers to an e.g "InteractionHandler"
                 on:mousemove=move |ev: MouseEvent| {
-                    let Some(canvas) = canvas_ref.get() else { return; };
-                    let rect = canvas.get_bounding_client_rect();
-                    let mouse_x = f64::from(ev.client_x()) - rect.left();
-                    let mouse_y = f64::from(ev.client_y()) - rect.top();
-
-                    if let Some((id, start_mx, start_my, start_w, start_h)) = resizing.get() {
-                        let dx = mouse_x - start_mx;
-                        let dy = mouse_y - start_my;
-                        let new_w = (start_w + dx).max(120.0);
-                        let new_h = (start_h + dy).max(80.0);
-
-                        set_layouts.update(|map| {
-                            if let Some(l) = map.get_mut(&id) {
-                                l.w = new_w;
-                                l.h = new_h;
-                            }
-                        });
-                        return;
-                    }
-
-                    let Some((id, offset_x, offset_y)) = dragging.get() else { return; };
-
-                    let new_x = (mouse_x - offset_x).max(0.0);
-                    let new_y = (mouse_y - offset_y).max(0.0);
+                    let Some(canvas) = canvas_ref.get() else { return };
+                    let (mx, my) = InteractionHandler::canvas_coords(&ev, &canvas);
 
                     set_layouts.update(|map| {
-                        if let Some(l) = map.get_mut(&id) {
-                            l.x = new_x;
-                            l.y = new_y;
-                        }
+                        InteractionHandler::apply_resize(map, &resizing.get(), mx, my);
+                        InteractionHandler::apply_move(map, &dragging.get(), mx, my);
                     });
                 }
                 on:mouseup=move |_| {
-                    if let Some((id, _, _, _, _)) = resizing.get() {
+                    if let Some((id, ..)) = resizing.get() {
                         set_layouts.update(|map| {
-                            if let Some(l) = map.get_mut(&id) {
-                                l.w = PanelPlacer::snap(l.w, GRID_SIZE);
-                                l.h = PanelPlacer::snap(l.h, GRID_SIZE);
-                            }
+                            InteractionHandler::finish(map, &id, GRID_SIZE, MARGIN, true);
                         });
-
-                        set_layouts.update(|map| {
-                            if let Some(layout) = map.get(&id).cloned() {
-                                let (fx, fy) = PanelPlacer::find_nearest_free(&id, &layout, map, GRID_SIZE, MARGIN);
-                                if let Some(l) = map.get_mut(&id) {
-                                    l.x = fx;
-                                    l.y = fy;
-                                }
-                            }
-                        });
-
                         set_resizing.set(None);
                         return;
                     }
-
-                    let Some((id, _, _)) = dragging.get() else { return; };
-
-                    set_layouts.update(|map| {
-                        if let Some(layout) = map.get(&id).cloned() {
-                            let (fx, fy) = PanelPlacer::find_nearest_free(&id, &layout, map, GRID_SIZE,MARGIN);
-                            if let Some(l) = map.get_mut(&id) {
-                                l.x = fx;
-                                l.y = fy;
-                            }
-                        }
-                    });
-
-                    set_dragging.set(None);
+                    if let Some((id, ..)) = dragging.get() {
+                        set_layouts.update(|map| {
+                            InteractionHandler::finish(map, &id, GRID_SIZE, MARGIN, false);
+                        });
+                        set_dragging.set(None);
+                    }
                 }
                 on:mouseleave=move |_| {
-                    if let Some((id, _, _, _, _)) = resizing.get() {
+                    if let Some((id, ..)) = resizing.get() {
                         set_layouts.update(|map| {
-                            if let Some(l) = map.get_mut(&id) {
-                                l.w = PanelPlacer::snap(l.w,GRID_SIZE);
-                                l.h = PanelPlacer::snap(l.h, GRID_SIZE);
-                            }
+                            InteractionHandler::finish(map, &id, GRID_SIZE, MARGIN, true);
                         });
-
-                        set_layouts.update(|map| {
-                            if let Some(layout) = map.get(&id).cloned() {
-                                let (fx, fy) = PanelPlacer::find_nearest_free(&id, &layout, map,GRID_SIZE, MARGIN);
-                                if let Some(l) = map.get_mut(&id) {
-                                    l.x = fx;
-                                    l.y = fy;
-                                }
-                            }
-                        });
-
                         set_resizing.set(None);
                         return;
                     }
-
-                    let Some((id, _, _)) = dragging.get() else { return; };
-
-                    set_layouts.update(|map| {
-                        if let Some(layout) = map.get(&id).cloned() {
-                            let (fx, fy) = PanelPlacer::find_nearest_free(&id, &layout, map,GRID_SIZE, MARGIN);
-                            if let Some(l) = map.get_mut(&id) {
-                                l.x = fx;
-                                l.y = fy;
-                            }
-                        }
-                    });
-
-                    set_dragging.set(None);
+                    if let Some((id, ..)) = dragging.get() {
+                        set_layouts.update(|map| {
+                            InteractionHandler::finish(map, &id, GRID_SIZE, MARGIN, false);
+                        });
+                        set_dragging.set(None);
+                    }
                 }
             >
-                // TODO: Obvious separate component
                 <For
                     each=move || metas.get()
                     key=|m| m.id.clone()
@@ -246,7 +178,10 @@ pub fn DashboardArea() -> impl IntoView {
                             move || {
                                 layouts.with(|map| {
                                     map.get(&id).cloned().unwrap_or(PanelLayout {
-                                        x: 0.0, y: 0.0, w: 200.0, h: 150.0,
+                                        x: 0.0,
+                                        y: 0.0,
+                                        w: 200.0,
+                                        h: 150.0,
                                     })
                                 })
                             }
@@ -274,50 +209,50 @@ pub fn DashboardArea() -> impl IntoView {
                                 }
                                 style=move || {
                                     let l = layout.get();
-                                    format!("left: {}px; top: {}px; width: {}px; height: {}px;", l.x, l.y, l.w, l.h)
+                                    format!(
+                                        "left: {}px; top: {}px; width: {}px; height: {}px;",
+                                        l.x, l.y, l.w, l.h
+                                    )
                                 }
                                 on:mousedown=move |ev: MouseEvent| {
-                                    if ev.button() != 0 { return; }
+                                    if ev.button() != 0 {
+                                        return;
+                                    }
                                     ev.prevent_default();
                                     ev.stop_propagation();
 
-                                    let Some(canvas) = canvas_ref.get() else { return; };
-                                    let rect = canvas.get_bounding_client_rect();
+                                    let Some(canvas) = canvas_ref.get() else { return };
+                                    let (mx, my) = InteractionHandler::canvas_coords(&ev, &canvas);
                                     let l = layout.get();
 
-                                    let mouse_x = f64::from(ev.client_x()) - rect.left();
-                                    let mouse_y = f64::from(ev.client_y()) - rect.top();
-
-                                    set_dragging.set(Some((
-                                        id_for_drag.clone(),
-                                        mouse_x - l.x,
-                                        mouse_y - l.y,
-                                    )));
+                                    set_dragging.set(
+                                        InteractionHandler::start_drag(id_for_drag.clone(), &l, mx, my)
+                                    );
                                 }
                             >
                                 <div
                                     class="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize
-                                           bg-neutral-500 hover:bg-blue-500 rounded-tl
-                                           opacity-60 hover:opacity-100 transition-opacity z-20"
+                                       bg-neutral-500 hover:bg-blue-500 rounded-tl
+                                       opacity-60 hover:opacity-100 transition-opacity z-20"
                                     on:mousedown=move |ev: MouseEvent| {
-                                        if ev.button() != 0 { return; }
+                                        if ev.button() != 0 {
+                                            return;
+                                        }
                                         ev.prevent_default();
                                         ev.stop_propagation();
 
-                                        let Some(canvas) = canvas_ref.get() else { return; };
-                                        let rect = canvas.get_bounding_client_rect();
+                                        let Some(canvas) = canvas_ref.get() else { return };
+                                        let (mx, my) = InteractionHandler::canvas_coords(&ev, &canvas);
                                         let l = layout.get();
 
-                                        let mouse_x = f64::from(ev.client_x()) - rect.left();
-                                        let mouse_y = f64::from(ev.client_y()) - rect.top();
-
-                                        set_resizing.set(Some((
-                                            id_for_resize.clone(),
-                                            mouse_x,
-                                            mouse_y,
-                                            l.w,
-                                            l.h,
-                                        )));
+                                        set_resizing.set(
+                                            InteractionHandler::start_resize(
+                                                id_for_resize.clone(),
+                                                &l,
+                                                mx,
+                                                my,
+                                            )
+                                        );
                                     }
                                 ></div>
 
@@ -328,13 +263,22 @@ pub fn DashboardArea() -> impl IntoView {
                                 <div class="h-[calc(100%-2rem)] bg-neutral-700/40 rounded overflow-hidden">
                                     {match content {
                                         PanelContent::BarChart => {
-                                            view! { <EBarChart values=chart_values labels=labels /> }.into_any()
+                                            view! {
+                                                <EBarChart values=chart_values labels=labels />
+                                            }
+                                            .into_any()
                                         }
                                         PanelContent::LineChart => {
-                                            view! { <ELineChart values=chart_values labels=labels /> }.into_any()
+                                            view! {
+                                                <ELineChart values=chart_values labels=labels />
+                                            }
+                                            .into_any()
                                         }
                                         PanelContent::CalendarHeatmap => {
-                                            view! { <ECalendarHeatmap values=cdata year=year /> }.into_any()
+                                            view! {
+                                                <ECalendarHeatmap values=cdata year=year />
+                                            }
+                                            .into_any()
                                         }
                                     }}
                                 </div>

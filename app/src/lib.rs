@@ -1,4 +1,5 @@
 mod components;
+mod data;
 mod e_charts;
 mod pages;
 pub mod server_fns;

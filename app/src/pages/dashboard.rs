@@ -1,6 +1,9 @@
-use crate::components::{
-    js_charts::{EBarChart, ECalendarHeatmap, ELineChart},
-    side_menu::SideMenu,
+use crate::{
+    components::{
+        js_charts::{EBarChart, ECalendarHeatmap, ELineChart},
+        side_menu::SideMenu,
+    },
+    data,
 };
 use leptos::{html, prelude::*};
 use std::collections::HashMap;
@@ -91,95 +94,32 @@ fn find_nearest_free(
 
 #[component]
 pub fn DashboardArea() -> impl IntoView {
-    let year = Signal::derive(|| "2026".to_string());
+    let year = Signal::derive(move || "2026".to_string());
 
-    let cdata = Signal::derive(|| {
-        vec![
-            ("2026-01-01".to_string(), 4210.0),
-            ("2026-01-03".to_string(), 8123.0),
-            ("2026-01-05".to_string(), 6750.0),
-            ("2026-01-08".to_string(), 9340.0),
-            ("2026-01-10".to_string(), 2860.0),
-            ("2026-01-12".to_string(), 7312.0),
-            ("2026-01-15".to_string(), 9980.0),
-            ("2026-01-18".to_string(), 4521.0),
-            ("2026-01-20".to_string(), 6145.0),
-            ("2026-01-23".to_string(), 8470.0),
-            ("2026-01-26".to_string(), 2150.0),
-            ("2026-01-29".to_string(), 7034.0),
-            ("2026-02-01".to_string(), 3890.0),
-            ("2026-02-03".to_string(), 5480.0),
-            ("2026-02-05".to_string(), 9210.0),
-            ("2026-02-08".to_string(), 6675.0),
-            ("2026-02-10".to_string(), 4820.0),
-            ("2026-02-12".to_string(), 10320.0),
-            ("2026-02-15".to_string(), 7560.0),
-            ("2026-02-18".to_string(), 3200.0),
-            ("2026-02-20".to_string(), 8445.0),
-            ("2026-02-22".to_string(), 9120.0),
-            ("2026-02-25".to_string(), 5780.0),
-            ("2026-02-28".to_string(), 6420.0),
-            ("2026-03-01".to_string(), 7120.0),
-            ("2026-03-03".to_string(), 9850.0),
-            ("2026-03-05".to_string(), 4360.0),
-            ("2026-03-08".to_string(), 8750.0),
-            ("2026-03-10".to_string(), 2920.0),
-            ("2026-03-12".to_string(), 5640.0),
-            ("2026-03-15".to_string(), 11040.0),
-            ("2026-03-18".to_string(), 6870.0),
-            ("2026-03-20".to_string(), 4555.0),
-            ("2026-03-23".to_string(), 8090.0),
-            ("2026-03-26".to_string(), 9735.0),
-            ("2026-03-29".to_string(), 6150.0),
-            ("2026-03-31".to_string(), 7425.0),
-        ]
-    });
+    let cdata = Signal::derive(data::dummy::calendar_heatmap_data);
 
-    use crate::components::charts::DateValuePoint;
-    use chrono::{Duration, Local};
-
-    let (chart_data, _) = signal({
-        let start = Local::now();
-        #[cfg(feature = "ssr")]
-        {
-            (0..10)
-                .map(|i| DateValuePoint {
-                    date: start - Duration::days(i),
-                    value: 30.0 + (i as f64 * 15.0),
-                })
-                .collect::<Vec<_>>()
-        }
-        #[cfg(not(feature = "ssr"))]
-        {
-            use rand::Rng;
-            (0..10)
-                .map(|i| DateValuePoint {
-                    date: start - Duration::days(i),
-                    value: (rand::thread_rng().gen_range(0.0_f64..=100.0_f64) * 10.0).round()
-                        / 10.0,
-                })
-                .collect::<Vec<_>>()
-        }
-    });
+    let (chart_data, _) = signal(data::dummy::chart_data());
 
     let labels = Signal::derive(move || {
-        let mut v = chart_data
+        let mut labels = chart_data
             .read()
             .iter()
             .map(|p| p.date.format("%d %b").to_string())
             .collect::<Vec<_>>();
-        v.reverse();
-        v
+
+        labels.reverse();
+        labels
     });
 
     let chart_values = Signal::derive(move || {
-        let mut v = chart_data
+        let mut values = chart_data
             .read()
             .iter()
             .map(|p| p.value)
             .collect::<Vec<_>>();
-        v.reverse();
-        v
+
+        values.reverse();
+        values
     });
 
     // ========== SEPARATED STATE ==========

@@ -34,6 +34,7 @@ pub struct PanelLayout {
 const GRID_SIZE: f64 = 20.0;
 const MARGIN: f64 = 10.0;
 
+// TODO: Separate out helpers
 fn snap(value: f64) -> f64 {
     (value / GRID_SIZE).round() * GRID_SIZE
 }
@@ -122,6 +123,7 @@ pub fn DashboardArea() -> impl IntoView {
         values
     });
 
+    //TODO: Look for better solution
     // ========== SEPARATED STATE ==========
     let (metas, _) = signal(vec![
         PanelMeta {
@@ -141,6 +143,7 @@ pub fn DashboardArea() -> impl IntoView {
         },
     ]);
 
+    // TODO move to data::dummy::?fn()
     let (layouts, set_layouts) = signal(HashMap::from([
         (
             "1".to_string(),
@@ -188,6 +191,7 @@ pub fn DashboardArea() -> impl IntoView {
                         linear-gradient(to bottom, #333 1px, transparent 1px); \
                      background-size: {GRID_SIZE}px {GRID_SIZE}px;"
                 )
+                // TODO: Separate event-handlers to an e.g "InteractionHandler"
                 on:mousemove=move |ev: MouseEvent| {
                     let Some(canvas) = canvas_ref.get() else { return; };
                     let rect = canvas.get_bounding_client_rect();
@@ -296,6 +300,7 @@ pub fn DashboardArea() -> impl IntoView {
                     set_dragging.set(None);
                 }
             >
+                // TODO: Obvious separate component
                 <For
                     each=move || metas.get()
                     key=|m| m.id.clone()

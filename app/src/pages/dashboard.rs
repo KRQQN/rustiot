@@ -2,6 +2,7 @@ use crate::{
     components::{
         dashboard::{
             interaction_handler::InteractionHandler,
+            panel::Panel,
             panel_placer::{PanelLayout, PanelPlacer},
         },
         js_charts::{EBarChart, ECalendarHeatmap, ELineChart},
@@ -32,6 +33,9 @@ pub fn DashboardArea() -> impl IntoView {
     let year = Signal::derive(move || "2026".to_string());
     let cdata = Signal::derive(data::dummy::calendar_heatmap_data);
     let (chart_data, _) = signal(data::dummy::chart_data());
+    let (dragging, set_dragging) = signal::<Option<(String, f64, f64)>>(None);
+    let (resizing, set_resizing) = signal::<Option<(String, f64, f64, f64, f64)>>(None);
+    let canvas_ref = NodeRef::<html::Div>::new();
 
     const GRID_SIZE: f64 = 20.0;
     const MARGIN: f64 = 10.0;
@@ -109,10 +113,6 @@ pub fn DashboardArea() -> impl IntoView {
         ),
     ]));
 
-    let (dragging, set_dragging) = signal::<Option<(String, f64, f64)>>(None);
-    let (resizing, set_resizing) = signal::<Option<(String, f64, f64, f64, f64)>>(None);
-    let canvas_ref = NodeRef::<html::Div>::new();
-
     view! {
         <div class="flex min-h-screen bg-slate-100">
             <SideMenu />
@@ -165,7 +165,7 @@ pub fn DashboardArea() -> impl IntoView {
                     }
                 }
             >
-                <For
+            <For
                     each=move || metas.get()
                     key=|m| m.id.clone()
                     children=move |meta| {
@@ -178,10 +178,7 @@ pub fn DashboardArea() -> impl IntoView {
                             move || {
                                 layouts.with(|map| {
                                     map.get(&id).cloned().unwrap_or(PanelLayout {
-                                        x: 0.0,
-                                        y: 0.0,
-                                        w: 200.0,
-                                        h: 150.0,
+                                        x: 0.0, y: 0.0, w: 200.0, h: 150.0,
                                     })
                                 })
                             }
@@ -194,99 +191,51 @@ pub fn DashboardArea() -> impl IntoView {
                             }
                         });
 
-                        let id_for_drag = id.clone();
-                        let id_for_resize = id.clone();
-
                         view! {
-                            <div
-                                class=move || {
-                                    let base = "absolute bg-neutral-800 border border-neutral-600 rounded-lg p-3 cursor-grab shadow-lg";
-                                    if is_dragging.get() {
-                                        format!("{base} cursor-grabbing z-50 ring-2 ring-blue-500 opacity-90")
-                                    } else {
-                                        format!("{base} z-10")
-                                    }
-                                }
-                                style=move || {
-                                    let l = layout.get();
-                                    format!(
-                                        "left: {}px; top: {}px; width: {}px; height: {}px;",
-                                        l.x, l.y, l.w, l.h
-                                    )
-                                }
-                                on:mousedown=move |ev: MouseEvent| {
-                                    if ev.button() != 0 {
-                                        return;
-                                    }
-                                    ev.prevent_default();
-                                    ev.stop_propagation();
-
-                                    let Some(canvas) = canvas_ref.get() else { return };
-                                    let (mx, my) = InteractionHandler::canvas_coords(&ev, &canvas);
-                                    let l = layout.get();
-
-                                    set_dragging.set(
-                                        InteractionHandler::start_drag(id_for_drag.clone(), &l, mx, my)
-                                    );
-                                }
+                            <Panel
+                                id=id
+                                title=title
+                                layout=layout
+                                is_dragging=is_dragging
+                                set_dragging=set_dragging
+                                set_resizing=set_resizing
+                                canvas_ref=canvas_ref
                             >
-                                <div
-                                    class="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize
-                                       bg-neutral-500 hover:bg-blue-500 rounded-tl
-                                       opacity-60 hover:opacity-100 transition-opacity z-20"
-                                    on:mousedown=move |ev: MouseEvent| {
-                                        if ev.button() != 0 {
-                                            return;
-                                        }
-                                        ev.prevent_default();
-                                        ev.stop_propagation();
-
-                                        let Some(canvas) = canvas_ref.get() else { return };
-                                        let (mx, my) = InteractionHandler::canvas_coords(&ev, &canvas);
-                                        let l = layout.get();
-
-                                        set_resizing.set(
-                                            InteractionHandler::start_resize(
-                                                id_for_resize.clone(),
-                                                &l,
-                                                mx,
-                                                my,
-                                            )
-                                        );
-                                    }
-                                ></div>
-
-                                <div class="font-medium text-sm text-neutral-200 mb-2 pointer-events-none">
-                                    {title.clone()}
-                                </div>
-
-                                <div class="h-[calc(100%-2rem)] bg-neutral-700/40 rounded overflow-hidden">
-                                    {match content {
-                                        PanelContent::BarChart => {
-                                            view! {
-                                                <EBarChart values=chart_values labels=labels />
-                                            }
-                                            .into_any()
-                                        }
-                                        PanelContent::LineChart => {
-                                            view! {
-                                                <ELineChart values=chart_values labels=labels />
-                                            }
-                                            .into_any()
-                                        }
-                                        PanelContent::CalendarHeatmap => {
-                                            view! {
-                                                <ECalendarHeatmap values=cdata year=year />
-                                            }
-                                            .into_any()
-                                        }
-                                    }}
-                                </div>
-                            </div>
+                                {render_chart(
+                                    content,
+                                    chart_values,
+                                    labels,
+                                    cdata,
+                                    year,
+                                )}
+                            </Panel>
                         }
                     }
                 />
-            </div>
+                </div>
         </div>
+    }
+}
+
+fn render_chart(
+    content: PanelContent,
+    chart_values: Signal<Vec<f64>>,
+    labels: Signal<Vec<String>>,
+    cdata: Signal<Vec<(String, f64)>>,
+    year: Signal<String>,
+) -> impl IntoView {
+    match content {
+        PanelContent::BarChart => view! {
+            <EBarChart values=chart_values labels=labels />
+        }
+        .into_any(),
+        PanelContent::LineChart => view! {
+            <ELineChart values=chart_values labels=labels />
+        }
+        .into_any(),
+        PanelContent::CalendarHeatmap => view! {
+            <ECalendarHeatmap values=cdata year=year />
+        }
+        .into_any(),
     }
 }

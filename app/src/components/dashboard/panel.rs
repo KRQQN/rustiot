@@ -13,7 +13,7 @@ pub fn Panel(
     set_dragging: WriteSignal<Option<(String, f64, f64)>>,
     set_resizing: WriteSignal<Option<(String, f64, f64, f64, f64)>>,
     canvas_ref: NodeRef<html::Div>,
-    children: Children,
+    content: ViewFn,
 ) -> impl IntoView {
     let id_for_drag = id.clone();
     let id_for_resize = id.clone();
@@ -79,7 +79,7 @@ pub fn Panel(
             </div>
 
             <div class="h-[calc(100%-2rem)] bg-neutral-700/40 rounded overflow-hidden">
-                {children()}
+                {content.run()}
             </div>
         </div>
     }

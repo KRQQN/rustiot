@@ -1,9 +1,7 @@
 use crate::{
     components::{
         dashboard::{
-            interaction_handler::InteractionHandler,
-            panel::Panel,
-            panel_placer::{PanelLayout, PanelPlacer},
+            interaction_handler::InteractionHandler, panel::Panel, panel_placer::PanelLayout,
         },
         js_charts::{EBarChart, ECalendarHeatmap, ELineChart},
         side_menu::SideMenu,
@@ -14,18 +12,11 @@ use leptos::{html, prelude::*};
 use std::collections::HashMap;
 use web_sys::MouseEvent;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum PanelContent {
-    BarChart,
-    LineChart,
-    CalendarHeatmap,
-}
-
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone)]
 pub struct PanelMeta {
     pub id: String,
     pub title: String,
-    pub content: PanelContent,
+    pub content: ViewFn,
 }
 
 #[component]
@@ -67,18 +58,24 @@ pub fn DashboardArea() -> impl IntoView {
     let (metas, _) = signal(vec![
         PanelMeta {
             id: "1".into(),
-            title: "CPU".into(),
-            content: PanelContent::BarChart,
+            title: "Liters".into(),
+            content: ViewFn::from(move || {
+                view! {<EBarChart values=chart_values labels=labels/>}.into_any()
+            }),
         },
         PanelMeta {
             id: "2".into(),
-            title: "Memory".into(),
-            content: PanelContent::LineChart,
+            title: "Temperature".into(),
+            content: ViewFn::from(move || {
+                view! {<ELineChart values=chart_values labels=labels/>}.into_any()
+            }),
         },
         PanelMeta {
             id: "3".into(),
-            title: "Network".into(),
-            content: PanelContent::CalendarHeatmap,
+            title: "Usage calendar".into(),
+            content: ViewFn::from(move || {
+                view! {<ECalendarHeatmap values=cdata year=year/>}.into_any()
+            }),
         },
     ]);
 
@@ -200,42 +197,12 @@ pub fn DashboardArea() -> impl IntoView {
                                 set_dragging=set_dragging
                                 set_resizing=set_resizing
                                 canvas_ref=canvas_ref
-                            >
-                                {render_chart(
-                                    content,
-                                    chart_values,
-                                    labels,
-                                    cdata,
-                                    year,
-                                )}
-                            </Panel>
+                                content=content
+                            />
                         }
                     }
                 />
                 </div>
         </div>
-    }
-}
-
-fn render_chart(
-    content: PanelContent,
-    chart_values: Signal<Vec<f64>>,
-    labels: Signal<Vec<String>>,
-    cdata: Signal<Vec<(String, f64)>>,
-    year: Signal<String>,
-) -> impl IntoView {
-    match content {
-        PanelContent::BarChart => view! {
-            <EBarChart values=chart_values labels=labels />
-        }
-        .into_any(),
-        PanelContent::LineChart => view! {
-            <ELineChart values=chart_values labels=labels />
-        }
-        .into_any(),
-        PanelContent::CalendarHeatmap => view! {
-            <ECalendarHeatmap values=cdata year=year />
-        }
-        .into_any(),
     }
 }

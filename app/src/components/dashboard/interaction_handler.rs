@@ -1,18 +1,18 @@
 use crate::components::dashboard::{
-    panel::AsPanel,
+    panel::{Panel, PanelInteraction},
     panel_placer::{PanelLayout, PanelPlacer},
 };
-use web_sys::MouseEvent;
 
-pub type DragState = Option<(String, f64, f64)>; // (id, offset_x, offset_y)
-pub type ResizeState = Option<(String, f64, f64, f64, f64)>; // (id, start_mx, start_my, start_w, start_h)
+use web_sys::MouseEvent;
 
 pub struct InteractionHandler;
 
 impl InteractionHandler {
     /// Convert client coordinates → canvas-local coordinates
+
     pub fn canvas_coords(ev: &MouseEvent, canvas: &web_sys::HtmlElement) -> (f64, f64) {
         let rect = canvas.get_bounding_client_rect();
+
         (
             f64::from(ev.client_x()) - rect.left(),
             f64::from(ev.client_y()) - rect.top(),
@@ -21,8 +21,17 @@ impl InteractionHandler {
 
     // ── Start actions ──────────────────────────────────────────────
 
-    pub fn start_drag(id: String, layout: &PanelLayout, mouse_x: f64, mouse_y: f64) -> DragState {
-        Some((id, mouse_x - layout.x, mouse_y - layout.y))
+    pub fn start_drag(
+        id: String,
+        layout: &PanelLayout,
+        mouse_x: f64,
+        mouse_y: f64,
+    ) -> PanelInteraction {
+        PanelInteraction::Dragging {
+            id,
+            offset_x: mouse_x - layout.x,
+            offset_y: mouse_y - layout.y,
+        }
     }
 
     pub fn start_resize(
@@ -30,75 +39,86 @@ impl InteractionHandler {
         layout: &PanelLayout,
         mouse_x: f64,
         mouse_y: f64,
-    ) -> ResizeState {
-        Some((id, mouse_x, mouse_y, layout.w, layout.h))
+    ) -> PanelInteraction {
+        PanelInteraction::Resizing {
+            id,
+            start_mx: mouse_x,
+            start_my: mouse_y,
+            start_w: layout.w,
+            start_h: layout.h,
+        }
     }
 
     // ── Continuous update (mousemove) ──────────────────────────────
 
-    pub fn apply_move(layout: &mut PanelLayout, dragging: &DragState, mouse_x: f64, mouse_y: f64) {
-        let Some((_, offset_x, offset_y)) = dragging else {
-            return;
-        };
-
-        layout.x = (mouse_x - offset_x).max(0.0);
-        layout.y = (mouse_y - offset_y).max(0.0);
-    }
-
-    pub fn apply_resize(
-        layout: &mut PanelLayout,
-        resizing: &ResizeState,
+    pub fn apply(
+        panels: &mut Vec<Panel>,
+        interaction: &PanelInteraction,
         mouse_x: f64,
         mouse_y: f64,
     ) {
-        let Some((_, start_mx, start_my, start_w, start_h)) = resizing else {
+        match interaction {
+            PanelInteraction::Dragging {
+                id,
+                offset_x,
+                offset_y,
+            } => {
+                if let Some(panel) = panels.iter_mut().find(|p| p.id == *id) {
+                    panel.layout.x = (mouse_x - offset_x).max(0.0);
+                    panel.layout.y = (mouse_y - offset_y).max(0.0);
+                }
+            }
+
+            PanelInteraction::Resizing {
+                id,
+                start_mx,
+                start_my,
+                start_w,
+                start_h,
+            } => {
+                if let Some(panel) = panels.iter_mut().find(|p| p.id == *id) {
+                    panel.layout.w = (start_w + (mouse_x - start_mx)).max(120.0);
+
+                    panel.layout.h = (start_h + (mouse_y - start_my)).max(80.0);
+                }
+            }
+        }
+    }
+
+    pub fn finish(
+        panels: &mut Vec<Panel>,
+        interaction: &PanelInteraction,
+        grid_size: f64,
+        margin: f64,
+    ) {
+        let (id, was_resizing) = match interaction {
+            PanelInteraction::Dragging { id, .. } => (id, false),
+            PanelInteraction::Resizing { id, .. } => (id, true),
+        };
+
+        let Some(index) = panels.iter().position(|p| p.id == *id) else {
             return;
         };
 
-        layout.w = (start_w + (mouse_x - start_mx)).max(120.0);
-        layout.h = (start_h + (mouse_y - start_my)).max(80.0);
-    }
+        let mut current = panels[index].layout.clone();
 
-    pub fn finish<P>(panels: &mut [P], id: &str, grid_size: f64, margin: f64, was_resizing: bool)
-    where
-        P: AsPanel,
-    {
-        // Snap size if we were resizing
         if was_resizing {
-            if let Some(panel) = panels.iter_mut().find(|p| p.id() == id) {
-                let layout = panel.layout_mut();
-                layout.w = PanelPlacer::snap(layout.w, grid_size);
-                layout.h = PanelPlacer::snap(layout.h, grid_size);
-            }
+            current.w = PanelPlacer::snap(current.w, grid_size);
+            current.h = PanelPlacer::snap(current.h, grid_size);
         }
 
-        // Get the current panel layout
-        let current_layout = panels
+        let others: Vec<&PanelLayout> = panels
             .iter()
-            .find(|p| p.id() == id)
-            .map(|p| p.layout().clone())
-            .unwrap_or(PanelLayout {
-                x: 0.0,
-                y: 0.0,
-                w: 200.0,
-                h: 150.0,
-            });
-        // Get the other panel layouts
-        let other_layouts: Vec<PanelLayout> = panels
-            .iter()
-            .filter(|p| p.id() != id)
-            .map(|p| p.layout().clone())
+            .enumerate()
+            .filter(|(i, _)| *i != index)
+            .map(|(_, p)| &p.layout)
             .collect();
 
-        let other_refs: Vec<&PanelLayout> = other_layouts.iter().collect();
+        let (fx, fy) = PanelPlacer::find_nearest_free(&current, &others, grid_size, margin);
 
-        let (fx, fy) =
-            PanelPlacer::find_nearest_free(&current_layout, &other_refs, grid_size, margin);
+        current.x = fx;
+        current.y = fy;
 
-        // Apply the new position
-        if let Some(panel) = panels.iter_mut().find(|p| p.id() == id) {
-            panel.layout_mut().x = fx;
-            panel.layout_mut().y = fy;
-        }
+        panels[index].layout = current;
     }
 }

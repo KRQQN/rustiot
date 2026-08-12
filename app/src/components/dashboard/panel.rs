@@ -4,6 +4,14 @@ use crate::components::dashboard::{
 use leptos::{html, prelude::*};
 use web_sys::MouseEvent;
 
+#[derive(Clone)]
+pub struct Panel {
+    pub id: String,
+    pub title: String,
+    pub content: ViewFn,
+    pub layout: PanelLayout,
+}
+
 #[component]
 pub fn Panel(
     id: String,
@@ -82,5 +90,23 @@ pub fn Panel(
                 {content.run()}
             </div>
         </div>
+    }
+}
+
+pub trait AsPanel {
+    fn id(&self) -> &str;
+    fn layout(&self) -> &PanelLayout;
+    fn layout_mut(&mut self) -> &mut PanelLayout;
+}
+
+impl AsPanel for Panel {
+    fn id(&self) -> &str {
+        &self.id
+    }
+    fn layout(&self) -> &PanelLayout {
+        &self.layout
+    }
+    fn layout_mut(&mut self) -> &mut PanelLayout {
+        &mut self.layout
     }
 }

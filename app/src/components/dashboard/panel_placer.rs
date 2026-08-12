@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct PanelLayout {
     pub x: f64,
@@ -25,18 +23,11 @@ impl PanelPlacer {
     }
 
     pub fn find_nearest_free(
-        id: &str,
         layout: &PanelLayout,
-        layouts: &HashMap<String, PanelLayout>,
+        others: &[&PanelLayout],
         grid_size: f64,
         margin: f64,
     ) -> (f64, f64) {
-        let others: Vec<&PanelLayout> = layouts
-            .iter()
-            .filter(|(other_id, _)| *other_id != id)
-            .map(|(_, layout)| layout)
-            .collect();
-
         if others
             .iter()
             .all(|other| !Self::overlaps(layout, other, margin))

@@ -12,25 +12,54 @@ pub struct Panel {
     pub layout: PanelLayout,
 }
 
+#[derive(Clone)]
+pub enum PanelInteraction {
+    Dragging {
+        id: String,
+        offset_x: f64,
+        offset_y: f64,
+    },
+    Resizing {
+        id: String,
+        start_mx: f64,
+        start_my: f64,
+        start_w: f64,
+        start_h: f64,
+    },
+}
+
 #[component]
 pub fn Panel(
     id: String,
     title: String,
     layout: Signal<PanelLayout>,
-    is_dragging: Signal<bool>,
-    set_dragging: WriteSignal<Option<(String, f64, f64)>>,
-    set_resizing: WriteSignal<Option<(String, f64, f64, f64, f64)>>,
+    interaction: ReadSignal<Option<PanelInteraction>>,
+    set_interaction: WriteSignal<Option<PanelInteraction>>,
     canvas_ref: NodeRef<html::Div>,
     content: ViewFn,
 ) -> impl IntoView {
     let id_for_drag = id.clone();
     let id_for_resize = id.clone();
 
+    let is_this_dragging = Memo::new({
+        let id = id.clone();
+        move |_| {
+            matches!(
+                interaction.get(),
+                Some(PanelInteraction::Dragging {
+                    id: ref did,
+                    offset_x: _,
+                    offset_y: _,
+                }) if *did == id
+            )
+        }
+    });
+
     view! {
         <div
             class=move || {
                 let base = "absolute bg-neutral-800 border border-neutral-600 rounded-lg p-3 cursor-grab shadow-lg";
-                if is_dragging.get() {
+                if is_this_dragging.get() {
                     format!("{base} cursor-grabbing z-50 ring-2 ring-blue-500 opacity-90")
                 } else {
                     format!("{base} z-10")
@@ -49,12 +78,18 @@ pub fn Panel(
                 }
                 ev.prevent_default();
                 ev.stop_propagation();
-                let Some(canvas) = canvas_ref.get() else { return };
+
+                let Some(canvas) = canvas_ref.get() else {
+                    return;
+                };
                 let (mx, my) = InteractionHandler::canvas_coords(&ev, &canvas);
                 let l = layout.get();
-                set_dragging.set(
-                    InteractionHandler::start_drag(id_for_drag.clone(), &l, mx, my)
-                );
+
+                set_interaction.set(Some(PanelInteraction::Dragging {
+                    id: id_for_drag.clone(),
+                    offset_x: mx - l.x,
+                    offset_y: my - l.y,
+                }));
             }
         >
             // Resize handle
@@ -68,17 +103,20 @@ pub fn Panel(
                     }
                     ev.prevent_default();
                     ev.stop_propagation();
-                    let Some(canvas) = canvas_ref.get() else { return };
+
+                    let Some(canvas) = canvas_ref.get() else {
+                        return;
+                    };
                     let (mx, my) = InteractionHandler::canvas_coords(&ev, &canvas);
                     let l = layout.get();
-                    set_resizing.set(
-                        InteractionHandler::start_resize(
-                            id_for_resize.clone(),
-                            &l,
-                            mx,
-                            my,
-                        )
-                    );
+
+                    set_interaction.set(Some(PanelInteraction::Resizing {
+                        id: id_for_resize.clone(),
+                        start_mx: mx,
+                        start_my: my,
+                        start_w: l.w,
+                        start_h: l.h,
+                    }));
                 }
             ></div>
 
@@ -90,23 +128,5 @@ pub fn Panel(
                 {content.run()}
             </div>
         </div>
-    }
-}
-
-pub trait AsPanel {
-    fn id(&self) -> &str;
-    fn layout(&self) -> &PanelLayout;
-    fn layout_mut(&mut self) -> &mut PanelLayout;
-}
-
-impl AsPanel for Panel {
-    fn id(&self) -> &str {
-        &self.id
-    }
-    fn layout(&self) -> &PanelLayout {
-        &self.layout
-    }
-    fn layout_mut(&mut self) -> &mut PanelLayout {
-        &mut self.layout
     }
 }

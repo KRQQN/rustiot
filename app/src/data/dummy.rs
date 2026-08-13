@@ -1,6 +1,11 @@
-use crate::components::charts::DateValuePoint;
+use crate::components::dashboard::panel::Panel;
+use crate::components::dashboard::panel_placer::PanelLayout;
+use crate::components::js_charts::{EBarChart, ECalendarHeatmap, ELineChart};
+use crate::{components::charts::DateValuePoint, pages::dashboard::PanelType};
 use chrono::{Duration, Local};
+use leptos::{html, prelude::*};
 
+use leptos::reactive::wrappers::read::Signal;
 #[cfg(not(feature = "ssr"))]
 use rand::Rng;
 
@@ -69,5 +74,165 @@ pub fn chart_data() -> Vec<DateValuePoint> {
                 value: (rng.gen_range(0.0_f64..=100.0_f64) * 10.0).round() / 10.0,
             })
             .collect()
+    }
+}
+
+pub fn db_read_get_panels() -> Vec<Panel> {
+    let chart_data = chart_data();
+
+    let mut labels = chart_data
+        .iter()
+        .map(|p| p.date.format("%d %b").to_string())
+        .collect::<Vec<_>>();
+    labels.reverse();
+
+    let mut chart_values = chart_data.iter().map(|p| p.value).collect::<Vec<_>>();
+    chart_values.reverse();
+
+    let labels = Signal::derive(move || labels.clone());
+    let chart_values = Signal::derive(move || chart_values.clone());
+
+    let cdata = Signal::derive(calendar_heatmap_data);
+    let year = Signal::derive(|| "2026".to_string());
+
+    vec![
+        Panel {
+            id: "1".into(),
+            title: "Liters".into(),
+            content: ViewFn::from(move || {
+                view! {
+                    <EBarChart
+                        values=chart_values
+                        labels=labels
+                    />
+                }
+                .into_any()
+            }),
+            layout: PanelLayout {
+                x: 20.0,
+                y: 20.0,
+                w: 320.0,
+                h: 220.0,
+            },
+        },
+        Panel {
+            id: "2".into(),
+            title: "Temperature".into(),
+            content: ViewFn::from(move || {
+                view! {
+                    <ELineChart
+                        values=chart_values
+                        labels=labels
+                    />
+                }
+                .into_any()
+            }),
+            layout: PanelLayout {
+                x: 360.0,
+                y: 20.0,
+                w: 320.0,
+                h: 220.0,
+            },
+        },
+        Panel {
+            id: "3".into(),
+            title: "Usage calendar".into(),
+            content: ViewFn::from(move || {
+                view! {
+                    <ECalendarHeatmap
+                        values=cdata
+                        year=year
+                    />
+                }
+                .into_any()
+            }),
+            layout: PanelLayout {
+                x: 20.0,
+                y: 260.0,
+                w: 660.0,
+                h: 180.0,
+            },
+        },
+    ]
+}
+
+pub fn new_panel(panel_type: PanelType, id: String) -> Panel {
+    let chart_data = chart_data();
+
+    let mut labels = chart_data
+        .iter()
+        .map(|p| p.date.format("%d %b").to_string())
+        .collect::<Vec<_>>();
+    labels.reverse();
+
+    let mut chart_values = chart_data.iter().map(|p| p.value).collect::<Vec<_>>();
+    chart_values.reverse();
+
+    let labels = Signal::derive(move || labels.clone());
+    let chart_values = Signal::derive(move || chart_values.clone());
+
+    let cdata = Signal::derive(calendar_heatmap_data);
+    let year = Signal::derive(|| "2026".to_string());
+
+    match panel_type {
+        PanelType::BarChart => Panel {
+            id,
+            title: "Bar Chart".into(),
+            content: ViewFn::from(move || {
+                view! {
+                    <EBarChart
+                        values=chart_values
+                        labels=labels
+                    />
+                }
+                .into_any()
+            }),
+            layout: PanelLayout {
+                x: 20.0,
+                y: 20.0,
+                w: 320.0,
+                h: 220.0,
+            },
+        },
+
+        PanelType::LineChart => Panel {
+            id,
+            title: "Line Chart".into(),
+            content: ViewFn::from(move || {
+                view! {
+                    <ELineChart
+                        values=chart_values
+                        labels=labels
+                    />
+                }
+                .into_any()
+            }),
+            layout: PanelLayout {
+                x: 20.0,
+                y: 20.0,
+                w: 320.0,
+                h: 220.0,
+            },
+        },
+
+        PanelType::CalendarHeatmap => Panel {
+            id,
+            title: "Calendar".into(),
+            content: ViewFn::from(move || {
+                view! {
+                    <ECalendarHeatmap
+                        values=cdata
+                        year=year
+                    />
+                }
+                .into_any()
+            }),
+            layout: PanelLayout {
+                x: 20.0,
+                y: 20.0,
+                w: 660.0,
+                h: 180.0,
+            },
+        },
     }
 }

@@ -50,6 +50,8 @@ impl InteractionHandler {
                     panel.layout.h = (start_h + (mouse_y - start_my)).max(80.0);
                 }
             }
+
+            PanelInteraction::Removing { .. } => return,
         }
     }
 
@@ -62,6 +64,7 @@ impl InteractionHandler {
         let (id, was_resizing) = match interaction {
             PanelInteraction::Dragging { id, .. } => (id, false),
             PanelInteraction::Resizing { id, .. } => (id, true),
+            PanelInteraction::Removing { .. } => return,
         };
 
         let Some(index) = panels.iter().position(|p| p.id == *id) else {

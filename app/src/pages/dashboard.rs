@@ -51,9 +51,18 @@ pub fn DashboardArea() -> impl IntoView {
             return;
         };
 
-        set_panels.update(|panels| {
-            InteractionHandler::finish(panels, &interaction, GRID_SIZE, MARGIN);
-        });
+        match &interaction {
+            PanelInteraction::Removing { id } => {
+                set_panels.update(|panels| {
+                    panels.retain(|p| p.id != *id);
+                });
+            }
+            _ => {
+                set_panels.update(|panels| {
+                    InteractionHandler::finish(panels, &interaction, GRID_SIZE, MARGIN);
+                });
+            }
+        }
 
         set_interaction.set(None);
     };

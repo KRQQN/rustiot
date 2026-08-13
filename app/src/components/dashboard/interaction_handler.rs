@@ -9,7 +9,6 @@ pub struct InteractionHandler;
 
 impl InteractionHandler {
     /// Convert client coordinates → canvas-local coordinates
-
     pub fn canvas_coords(ev: &MouseEvent, canvas: &web_sys::HtmlElement) -> (f64, f64) {
         let rect = canvas.get_bounding_client_rect();
 
@@ -19,38 +18,7 @@ impl InteractionHandler {
         )
     }
 
-    // ── Start actions ──────────────────────────────────────────────
-
-    pub fn start_drag(
-        id: String,
-        layout: &PanelLayout,
-        mouse_x: f64,
-        mouse_y: f64,
-    ) -> PanelInteraction {
-        PanelInteraction::Dragging {
-            id,
-            offset_x: mouse_x - layout.x,
-            offset_y: mouse_y - layout.y,
-        }
-    }
-
-    pub fn start_resize(
-        id: String,
-        layout: &PanelLayout,
-        mouse_x: f64,
-        mouse_y: f64,
-    ) -> PanelInteraction {
-        PanelInteraction::Resizing {
-            id,
-            start_mx: mouse_x,
-            start_my: mouse_y,
-            start_w: layout.w,
-            start_h: layout.h,
-        }
-    }
-
     // ── Continuous update (mousemove) ──────────────────────────────
-
     pub fn apply(
         panels: &mut Vec<Panel>,
         interaction: &PanelInteraction,

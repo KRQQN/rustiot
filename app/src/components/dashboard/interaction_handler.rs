@@ -107,6 +107,7 @@ impl InteractionHandler {
             current.h = PanelPlacer::snap(current.h, grid_size);
         }
 
+        // This section belongs elsewhere
         let others: Vec<&PanelLayout> = panels
             .iter()
             .enumerate()
@@ -115,7 +116,7 @@ impl InteractionHandler {
             .collect();
 
         let (fx, fy) = PanelPlacer::find_nearest_free(&current, &others, grid_size, margin);
-
+        // --------------------------------
         current.x = fx;
         current.y = fy;
 

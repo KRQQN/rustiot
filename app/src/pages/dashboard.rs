@@ -3,7 +3,7 @@ use crate::{
         dashboard::{
             interaction_handler::InteractionHandler,
             panel::{Panel, PanelInteraction},
-            panel_placer::PanelLayout,
+            panel_placer::{PanelLayout, PanelPlacer},
             toolbar::PanelToolbar,
         },
         js_charts::{EBarChart, ECalendarHeatmap, ELineChart},
@@ -120,16 +120,30 @@ pub fn DashboardArea() -> impl IntoView {
                 ),
             };
 
+            // Needs a better solution for this, also used in interaction_handler.rs
+            let others: Vec<&PanelLayout> = panels
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| *i != panels.len() + 1)
+                .map(|(_, p)| &p.layout)
+                .collect();
+
+            let mut layout = PanelLayout {
+                x: 40.0,
+                y: 40.0,
+                w: 320.0,
+                h: 220.0,
+            };
+
+            let (x, y) = PanelPlacer::find_nearest_free(&layout, &others, GRID_SIZE, MARGIN);
+            layout.x = x;
+            layout.y = y;
+
             panels.push(Panel {
                 id,
                 title,
                 content,
-                layout: PanelLayout {
-                    x: 40.0,
-                    y: 40.0,
-                    w: 320.0,
-                    h: 220.0,
-                },
+                layout,
             });
         });
     });

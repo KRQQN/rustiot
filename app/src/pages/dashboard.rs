@@ -4,6 +4,7 @@ use crate::{
             interaction_handler::InteractionHandler,
             panel::{Panel, PanelInteraction},
             panel_placer::PanelLayout,
+            toolbar::PanelToolbar,
         },
         js_charts::{EBarChart, ECalendarHeatmap, ELineChart},
         side_menu::SideMenu,
@@ -12,6 +13,13 @@ use crate::{
 };
 use leptos::{html, prelude::*};
 use web_sys::MouseEvent;
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum PanelType {
+    BarChart,
+    LineChart,
+    CalendarHeatmap,
+}
 
 #[component]
 pub fn DashboardArea() -> impl IntoView {
@@ -88,6 +96,44 @@ pub fn DashboardArea() -> impl IntoView {
         },
     ]);
 
+    let add_panel = Callback::new(move |panel_type: PanelType| {
+        set_panels.update(|panels| {
+            let id = format!("panel-{}", panels.len() + 1);
+            let (title, content) = match panel_type {
+                PanelType::BarChart => (
+                    "Bar Chart".into(),
+                    ViewFn::from(move || {
+                        view! { <EBarChart values=chart_values labels=labels/> }.into_any()
+                    }),
+                ),
+                PanelType::LineChart => (
+                    "Line Chart".into(),
+                    ViewFn::from(move || {
+                        view! { <ELineChart values=chart_values labels=labels/> }.into_any()
+                    }),
+                ),
+                PanelType::CalendarHeatmap => (
+                    "Calendar".into(),
+                    ViewFn::from(move || {
+                        view! { <ECalendarHeatmap values=cdata year=year/> }.into_any()
+                    }),
+                ),
+            };
+
+            panels.push(Panel {
+                id,
+                title,
+                content,
+                layout: PanelLayout {
+                    x: 40.0,
+                    y: 40.0,
+                    w: 320.0,
+                    h: 220.0,
+                },
+            });
+        });
+    });
+
     let finish_current = move || {
         let Some(interaction) = interaction.get() else {
             return;
@@ -140,6 +186,7 @@ pub fn DashboardArea() -> impl IntoView {
                     finish_current();
                 }
             >
+                <PanelToolbar on_add=add_panel />
                 <For
                     each=move || panels.get()
                     key=|p| p.id.clone()

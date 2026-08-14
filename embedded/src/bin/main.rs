@@ -7,41 +7,49 @@
 )]
 #![deny(clippy::large_stack_frames)]
 
+use embassy_executor::Spawner;
+use embassy_time::{Duration, Timer};
+
 use esp_hal::{
     clock::CpuClock,
-    main,
-    time::{Duration, Instant},
+    gpio::{Level, Output, OutputConfig},
 };
 
-
 use esp_backtrace as _;
-
 
 // This creates a default app-descriptor required by the esp-idf bootloader.
 // For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
 esp_bootloader_esp_idf::esp_app_desc!();
 
-#[allow(
-    clippy::large_stack_frames,
-    reason = "it's not unusual to allocate larger buffers etc. in main"
-)]
-#[main]
-fn main() -> ! {
+#[embassy_executor::task]
+async fn led_task(mut led: Output<'static>) {
+    loop {
+        led.toggle();
+
+        esp_println::println!("LED toggled");
+
+        Timer::after(Duration::from_millis(500)).await;
+    }
+}
+
+#[esp_rtos::main]
+async fn main(spawner: Spawner) {
     // generator version: 1.3.0
     // generator parameters: --chip esp32s3 -o esp32s3-mini-1-psram -o esp-backtrace -o neovim
-
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
 
+    let led = Output::new(peripherals.GPIO48, Level::High, OutputConfig::default());
+
     // The following pins are used to bootstrap the chip. They are available
-                    // for use, but check the datasheet of the module for more information on them.
-                    // - GPIO0
-// - GPIO3
-// - GPIO45
-// - GPIO46
-// These GPIO pins are in use by some feature of the module and should not be used.
-                        let _ = peripherals.GPIO26;
+    // for use, but check the datasheet of the module for more information on them.
+    // - GPIO0
+    // - GPIO3
+    // - GPIO45
+    // - GPIO46
+    // These GPIO pins are in use by some feature of the module and should not be used.
+    let _ = peripherals.GPIO26;
     let _ = peripherals.GPIO27;
     let _ = peripherals.GPIO28;
     let _ = peripherals.GPIO29;
@@ -49,13 +57,5 @@ fn main() -> ! {
     let _ = peripherals.GPIO31;
     let _ = peripherals.GPIO32;
 
-
-
-
-    loop {
-        let delay_start = Instant::now();
-        while delay_start.elapsed() < Duration::from_millis(500) {}
-    }
-
-    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
+    spawner.spawn(led_task(led).unwrap());
 }

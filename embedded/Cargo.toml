@@ -14,7 +14,6 @@ path = "./src/bin/main.rs"
 esp-hal = { version = "~1.1.0", features = ["esp32s3", "unstable"] }
 esp-bootloader-esp-idf = { version = "0.5.0", features = ["esp32s3"] }
 
-# RTOS + Embassy integration
 esp-rtos = { version = "0.3.0", features = ["embassy", "esp32s3"] }
 
 # Embassy
@@ -27,7 +26,8 @@ esp-backtrace = { version = "0.19.0", features = [
   "panic-handler",
   "println",
 ] }
-esp-println = { version = "0.17.0", features = ["esp32s3"] }
+esp-println = { version = "0.17.0", features = ["esp32s3", "log-04"] }
+log = "0.4"
 
 critical-section = "1.2.0"
 

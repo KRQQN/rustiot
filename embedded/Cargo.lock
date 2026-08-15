@@ -451,6 +451,7 @@ dependencies = [
  "esp-hal",
  "esp-println",
  "esp-rtos",
+ "log",
 ]
 
 [[package]]

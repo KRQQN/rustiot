@@ -13,12 +13,21 @@ path = "./src/bin/main.rs"
 [dependencies]
 esp-hal = { version = "~1.1.0", features = ["esp32s3", "unstable"] }
 esp-bootloader-esp-idf = { version = "0.5.0", features = ["esp32s3"] }
+esp-rtos = { version = "0.3.0", features = [
+    "embassy",
+    "esp32s3",
+    "esp-radio",
+] }
+esp-alloc = "0.10"
+static_cell = "2.1"
 
-esp-rtos = { version = "0.3.0", features = ["embassy", "esp32s3"] }
+# Connection
+esp-radio = { version = "0.18", features = ["esp32s3", "wifi", "log-04"] }
+embassy-net = { version = "0.9", features = ["dhcpv4", "tcp", "udp", "dns", "medium-ethernet"] }
 
 # Embassy
 embassy-executor = { version = "0.10.0", features = [] }
-embassy-time = "0.5.0"
+embassy-time = "0.5"
 
 # Sensors
 embedded-dht-rs = { version = "0.5", features = ["dht11"] }

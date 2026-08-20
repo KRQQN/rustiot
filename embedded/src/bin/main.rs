@@ -3,10 +3,12 @@
 
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
+use embedded_dht_rs::dht11::Dht11;
 use esp_backtrace as _;
 use esp_hal::{
     clock::CpuClock,
-    gpio::{Level, Output, OutputConfig},
+    delay::Delay,
+    gpio::{DriveMode, Flex, Level, Output, OutputConfig, Pull},
     interrupt::software::SoftwareInterruptControl,
     timer::timg::TimerGroup,
 };
@@ -20,7 +22,6 @@ async fn main(spawner: Spawner) {
     // --- target specific crate ---
     // ESP_LOG=info, embedded::led_task=debug
     esp_println::logger::init_logger_from_env();
-
     info!("Booting...");
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
@@ -28,14 +29,27 @@ async fn main(spawner: Spawner) {
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
     let sw_int = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
-
     esp_rtos::start(timg0.timer0, sw_int.software_interrupt0);
     info!("Embassy + esp-rtos started");
 
-    let led = Output::new(peripherals.GPIO48, Level::High, OutputConfig::default());
+    let mut dht_pin = Flex::new(peripherals.GPIO4);
 
+    dht_pin.apply_output_config(
+        &OutputConfig::default()
+            .with_drive_mode(DriveMode::OpenDrain)
+            .with_pull(Pull::None),
+    );
+    dht_pin.set_output_enable(true);
+    dht_pin.set_input_enable(true);
+    dht_pin.set_high(); // idle state
+
+    let delay = Delay::new();
+    let dht = Dht11::new(dht_pin, delay);
+
+    let led = Output::new(peripherals.GPIO48, Level::High, OutputConfig::default());
     spawner.spawn(led_task(led).unwrap());
     spawner.spawn(heartbeat_task().unwrap());
+    spawner.spawn(dht11_task(dht).unwrap());
 
     info!("Tasks spawned");
 }
@@ -56,5 +70,28 @@ async fn heartbeat_task() {
         count += 1;
         info!("Heartbeat #{count}");
         Timer::after(Duration::from_secs(2)).await;
+    }
+}
+
+#[embassy_executor::task]
+async fn dht11_task(mut dht: Dht11<Flex<'static>, Delay>) {
+    // Give the sensor a moment after power-up
+    Timer::after(Duration::from_secs(2)).await;
+
+    loop {
+        match dht.read() {
+            Ok(reading) => {
+                info!(
+                    "DHT11 → Temperature: {:.1} °C | Humidity: {:.1} %",
+                    reading.temperature, reading.humidity
+                );
+            }
+            Err(e) => {
+                info!("DHT11 read error: {:?}", e);
+            }
+        }
+
+        // DHT11 needs ~1–2s between readings
+        Timer::after(Duration::from_secs(5)).await;
     }
 }

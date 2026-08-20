@@ -1,8 +1,7 @@
 #![no_std]
 #![no_main]
-
 use embassy_executor::Spawner;
-use embassy_time::{Duration, Timer};
+use embedded::tasks::{dht11::dht11_task, heartbeat::heartbeat_task, led::led_task};
 use embedded_dht_rs::dht11::Dht11;
 use esp_backtrace as _;
 use esp_hal::{
@@ -52,46 +51,4 @@ async fn main(spawner: Spawner) {
     spawner.spawn(dht11_task(dht).unwrap());
 
     info!("Tasks spawned");
-}
-
-#[embassy_executor::task]
-async fn led_task(mut led: Output<'static>) {
-    loop {
-        led.toggle();
-        info!("LED toggled");
-        Timer::after(Duration::from_millis(500)).await;
-    }
-}
-
-#[embassy_executor::task]
-async fn heartbeat_task() {
-    let mut count = 0u32;
-    loop {
-        count += 1;
-        info!("Heartbeat #{count}");
-        Timer::after(Duration::from_secs(2)).await;
-    }
-}
-
-#[embassy_executor::task]
-async fn dht11_task(mut dht: Dht11<Flex<'static>, Delay>) {
-    // Give the sensor a moment after power-up
-    Timer::after(Duration::from_secs(2)).await;
-
-    loop {
-        match dht.read() {
-            Ok(reading) => {
-                info!(
-                    "DHT11 → Temperature: {:.1} °C | Humidity: {:.1} %",
-                    reading.temperature, reading.humidity
-                );
-            }
-            Err(e) => {
-                info!("DHT11 read error: {:?}", e);
-            }
-        }
-
-        // DHT11 needs ~1–2s between readings
-        Timer::after(Duration::from_secs(5)).await;
-    }
 }

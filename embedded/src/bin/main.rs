@@ -3,7 +3,10 @@
 
 use embassy_executor::Spawner;
 use embedded::tasks::{
-    dht11::dht11_task, heartbeat::heartbeat_task, led::led_task, network::net_task,
+    dht11::dht11_task,
+    heartbeat::heartbeat_task,
+    led::led_task,
+    network::{net_task, wifi_task},
 };
 use embedded::wifi::{self};
 use embedded_dht_rs::dht11::Dht11;
@@ -41,28 +44,24 @@ async fn main(spawner: Spawner) {
         .expect("Failed to initialize WiFi");
 
     let wifi = wifi::create(controller, interfaces.station);
-
     let wifi::Wifi {
-        mut controller,
+        controller,
         stack,
         runner,
     } = wifi;
 
     spawner.spawn(net_task(runner).unwrap());
-
     info!("Network runner started");
 
-    wifi::connect(&mut controller, WIFI_SSID, WIFI_PASSWORD).await;
-
-    info!("WiFi connected");
+    spawner.spawn(wifi_task(controller, WIFI_SSID, WIFI_PASSWORD).unwrap());
+    info!("WiFi task started");
 
     while !stack.is_config_up() {
         embassy_time::Timer::after_secs(1).await;
     }
-
     info!("Network is up");
-    let mut dht_pin = Flex::new(peripherals.GPIO4);
 
+    let mut dht_pin = Flex::new(peripherals.GPIO4);
     dht_pin.apply_output_config(
         &OutputConfig::default()
             .with_drive_mode(DriveMode::OpenDrain)

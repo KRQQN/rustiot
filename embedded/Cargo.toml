@@ -24,6 +24,7 @@ static_cell = "2.1"
 # Connection
 esp-radio = { version = "0.18", features = ["esp32s3", "wifi", "log-04"] }
 embassy-net = { version = "0.9", features = ["dhcpv4", "tcp", "udp", "dns", "medium-ethernet"] }
+rust-mqtt = { version = "0.5.1", default-features = false, features = ["v5", "alloc", "log"] }
 
 # Embassy
 embassy-executor = { version = "0.10.0", features = [] }

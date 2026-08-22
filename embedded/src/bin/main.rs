@@ -2,6 +2,7 @@
 #![no_main]
 
 use embassy_executor::Spawner;
+use embedded::tasks::mqtt::mqtt_task;
 use embedded::tasks::{
     dht11::dht11_task,
     heartbeat::heartbeat_task,
@@ -60,6 +61,9 @@ async fn main(spawner: Spawner) {
         embassy_time::Timer::after_secs(1).await;
     }
     info!("Network is up");
+
+    spawner.spawn(mqtt_task(stack).unwrap());
+    info!("MQTT task started");
 
     let mut dht_pin = Flex::new(peripherals.GPIO4);
     dht_pin.apply_output_config(

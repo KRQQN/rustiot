@@ -1,4 +1,5 @@
-use alloc::string::String;
+use crate::channels::SENSOR_CHANNEL;
+use alloc::{format, string::String};
 use embassy_net::{Stack, dns::DnsQueryType, tcp::TcpSocket};
 use embassy_time::{Duration, Timer};
 use log::{info, warn};
@@ -127,16 +128,26 @@ pub async fn mqtt_task(stack: Stack<'static>) {
             info!("Published status=online on {}", status);
         }
 
+        let reading = SENSOR_CHANNEL.receive().await;
+
+        info!(
+            "Received DHT11: {} °C, {} %",
+            reading.temperature, reading.humidity
+        );
+
+        let payload = format!(
+            r#"{{"temp":{},"hum":{}}}"#,
+            reading.temperature, reading.humidity
+        );
+
         if let Err(e) = client
             .publish(
                 &PublicationOptions::new(TopicReference::Name(telem_topic.as_borrowed())),
-                (&br#"{"temp":22.5,"hum":40}"#[..]).into(),
+                payload.as_bytes().into(),
             )
             .await
         {
             warn!("Telemetry publish failed: {:?}", e);
-        } else {
-            info!("Published telemetry on {}", telem);
         }
 
         loop {
@@ -152,7 +163,6 @@ pub async fn mqtt_task(stack: Stack<'static>) {
         }
 
         let _ = client.abort().await;
-        // client + socket drop here → buffers free for next iteration
         Timer::after(Duration::from_secs(5)).await;
     }
 }

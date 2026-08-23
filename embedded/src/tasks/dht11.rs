@@ -11,10 +11,7 @@ pub async fn dht11_task(mut dht: Dht11<Flex<'static>, Delay>) {
     loop {
         match dht.read() {
             Ok(reading) => {
-                info!(
-                    "DHT11 → Temperature: {:.1} °C | Humidity: {:.1} %",
-                    reading.temperature, reading.humidity
-                );
+                info!("DHT11 sending reading data");
                 SENSOR_CHANNEL.send(reading).await;
             }
             Err(e) => {
@@ -23,6 +20,6 @@ pub async fn dht11_task(mut dht: Dht11<Flex<'static>, Delay>) {
         }
 
         // DHT11 needs ~1–2s between readings
-        Timer::after(Duration::from_secs(5)).await;
+        Timer::after(Duration::from_secs(10)).await;
     }
 }

@@ -30,6 +30,7 @@ rust-mqtt = { version = "0.5.1", default-features = false, features = ["v5", "al
 embassy-executor = { version = "0.10.0", features = [] }
 embassy-time = "0.5"
 embassy-sync = "0.8"
+embassy-futures = { version = "0.1", default-features = false }
 
 # Sensors
 embedded-dht-rs = { version = "0.5", features = ["dht11"] }

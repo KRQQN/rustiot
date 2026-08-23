@@ -5,8 +5,6 @@ use embassy_executor::Spawner;
 use embedded::tasks::mqtt::mqtt_task;
 use embedded::tasks::{
     dht11::dht11_task,
-    heartbeat::heartbeat_task,
-    led::led_task,
     network::{net_task, wifi_task},
 };
 use embedded::wifi::{self};
@@ -15,7 +13,7 @@ use esp_backtrace as _;
 use esp_hal::{
     clock::CpuClock,
     delay::Delay,
-    gpio::{DriveMode, Flex, Level, Output, OutputConfig, Pull},
+    gpio::{DriveMode, Flex, OutputConfig, Pull},
     interrupt::software::SoftwareInterruptControl,
     timer::timg::TimerGroup,
 };
@@ -78,10 +76,6 @@ async fn main(spawner: Spawner) {
     let delay = Delay::new();
     let dht = Dht11::new(dht_pin, delay);
 
-    let led = Output::new(peripherals.GPIO48, Level::High, OutputConfig::default());
-
-    spawner.spawn(led_task(led).unwrap());
-    spawner.spawn(heartbeat_task().unwrap());
     spawner.spawn(dht11_task(dht).unwrap());
 
     info!("Tasks spawned");

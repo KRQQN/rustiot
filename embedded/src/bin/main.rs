@@ -4,6 +4,7 @@
 use embassy_executor::Spawner;
 use embedded::tasks::mqtt::mqtt_task;
 use embedded::tasks::{
+    ble::ble_task,
     dht11::dht11_task,
     network::{net_task, wifi_task},
 };
@@ -14,10 +15,11 @@ use esp_hal::{
     clock::CpuClock,
     delay::Delay,
     gpio::{DriveMode, Flex, OutputConfig, Pull},
-    interrupt::software::SoftwareInterruptControl,
     timer::timg::TimerGroup,
 };
+use esp_radio::ble::controller::BleConnector;
 use log::info;
+use trouble_host::prelude::ExternalController;
 
 esp_bootloader_esp_idf::esp_app_desc!();
 
@@ -32,17 +34,25 @@ async fn main(spawner: Spawner) {
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
 
-    esp_alloc::heap_allocator!(size: 64 * 1024);
+    esp_alloc::heap_allocator!(size: 128 * 1024);
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
-    let sw_int = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
-    esp_rtos::start(timg0.timer0, sw_int.software_interrupt0);
+    esp_rtos::start(timg0.timer0, peripherals.FROM_CPU_INTR0);
     info!("Embassy + esp-rtos started");
 
-    let (controller, interfaces) = esp_radio::wifi::new(peripherals.WIFI, Default::default())
+    let connector =
+        BleConnector::new(peripherals.BT, Default::default()).expect("Failed to initialize BLE");
+
+    let bt_controller: ExternalController<_, 20> = ExternalController::new(connector);
+
+    spawner.spawn(ble_task(bt_controller).unwrap());
+
+    let controller = esp_radio::wifi::WifiController::new(peripherals.WIFI, Default::default())
         .expect("Failed to initialize WiFi");
 
-    let wifi = wifi::create(controller, interfaces.station);
+    let station = esp_radio::wifi::Interface::station();
+    let wifi = wifi::create(controller, station);
+
     let wifi::Wifi {
         controller,
         stack,

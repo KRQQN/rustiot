@@ -5,10 +5,10 @@ use static_cell::StaticCell;
 pub struct Wifi {
     pub controller: WifiController<'static>,
     pub stack: Stack<'static>,
-    pub runner: Runner<'static, Interface<'static>>,
+    pub runner: Runner<'static, Interface>,
 }
 
-pub fn create(controller: WifiController<'static>, station: Interface<'static>) -> Wifi {
+pub fn create(controller: WifiController<'static>, station: Interface) -> Wifi {
     static RESOURCES: StaticCell<StackResources<3>> = StaticCell::new();
 
     let resources = RESOURCES.init(StackResources::new());

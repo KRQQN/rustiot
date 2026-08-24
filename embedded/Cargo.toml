@@ -38,15 +38,6 @@ embassy-net = { version = "0.9", features = ["dhcpv4", "tcp", "udp", "dns", "med
 rust-mqtt = { version = "0.5.1", default-features = false, features = ["v5", "alloc", "log"] }
 trouble-host = { git = "https://github.com/embassy-rs/trouble", features = ["default-packet-pool-mtu-255", "security"] }
 
-# esp-radio = { version = "1.0.0-beta.0", features = [
-#     "esp32s3",
-#     "wifi",
-#     "ble",
-#     "coex",
-#     "log-04",
-#     "unstable",
-# ] }
-
 # Embassy
 embassy-executor = { version = "0.10.0", features = [] }
 embassy-time = "0.5"

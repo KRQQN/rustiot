@@ -65,23 +65,11 @@ async fn main(spawner: Spawner) {
     spawner.spawn(wifi_task(controller, WIFI_SSID, WIFI_PASSWORD).unwrap());
     info!("WiFi task started");
 
-    loop {
-        info!("A");
-
-        let link_up = stack.is_link_up();
-        info!("B link_up={}", link_up);
-
-        let config_up = stack.is_config_up();
-        info!("C config_up={}", config_up);
-
-        if config_up {
-            break;
-        }
-
-        info!("D sleeping");
+    while !stack.is_config_up() {
         embassy_time::Timer::after_secs(1).await;
-        info!("E woke");
     }
+    info!("Network is up");
+
     spawner.spawn(mqtt_task(stack).unwrap());
     info!("MQTT task started");
 

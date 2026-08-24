@@ -23,9 +23,6 @@ use trouble_host::prelude::ExternalController;
 
 esp_bootloader_esp_idf::esp_app_desc!();
 
-const WIFI_SSID: &str = "REDACTED";
-const WIFI_PASSWORD: &str = "REDACTED";
-
 #[esp_rtos::main]
 async fn main(spawner: Spawner) {
     esp_println::logger::init_logger_from_env();
@@ -62,7 +59,7 @@ async fn main(spawner: Spawner) {
     spawner.spawn(net_task(runner).unwrap());
     info!("Network runner started");
 
-    spawner.spawn(wifi_task(controller, WIFI_SSID, WIFI_PASSWORD).unwrap());
+    spawner.spawn(wifi_task(controller).unwrap());
     info!("WiFi task started");
 
     while !stack.is_config_up() {

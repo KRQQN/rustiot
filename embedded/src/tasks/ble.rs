@@ -1,46 +1,49 @@
 use embassy_futures::join::join;
-use embassy_futures::select::select;
 use embassy_time::Timer;
-use esp_radio::ble::controller::BleConnector;
+use heapless::String;
 use log::{info, warn};
 use trouble_host::prelude::*;
 
 const CONNECTIONS_MAX: usize = 1;
 const L2CAP_CHANNELS_MAX: usize = 2;
 
+const STATUS_CREDENTIALS_RECEIVED: u8 = 1;
+const STATUS_CHANNEL_FULL: u8 = 2;
+
 #[gatt_server]
 struct Server {
-    battery_service: BatteryService,
+    wifi_service: WifiProvisionService,
 }
 
-#[gatt_service(uuid = service::BATTERY)]
-struct BatteryService {
-    #[descriptor(
-        uuid = descriptors::VALID_RANGE,
-        read,
-        value = [0, 100]
-    )]
-    #[descriptor(
-        uuid = descriptors::MEASUREMENT_DESCRIPTION,
-        name = "hello",
-        read,
-        value = "Battery Level",
-        type = &'static str
-    )]
+#[gatt_service(uuid = "12345678-1234-5678-1234-56789abcdef0")]
+struct WifiProvisionService {
     #[characteristic(
-        uuid = characteristic::BATTERY_LEVEL,
+        uuid = "12345678-1234-5678-1234-56789abcdef1",
+        write,
+        write_without_response
+    )]
+    ssid: u8,
+
+    #[characteristic(
+        uuid = "12345678-1234-5678-1234-56789abcdef2",
+        write,
+        write_without_response
+    )]
+    password: u8,
+
+    #[characteristic(
+        uuid = "12345678-1234-5678-1234-56789abcdef3",
         read,
         notify,
-        value = 10
+        value = 0u8
     )]
-    level: u8,
-
-    #[characteristic(uuid = "408813df-5dd4-1f87-ec11-cdb001100000", read, write, notify)]
-    status: (),
+    status: u8,
 }
 
 #[embassy_executor::task]
-pub async fn ble_task(controller: ExternalController<BleConnector<'static>, 20>) {
+pub async fn ble_task(
+    controller: ExternalController<esp_radio::ble::controller::BleConnector<'static>, 20>,
+) {
     run(controller).await;
 }
 
@@ -57,7 +60,7 @@ where
     let mut peripheral = stack.peripheral();
 
     let server = Server::new_with_config(GapConfig::Peripheral(PeripheralConfig {
-        name: "Trouble Example",
+        name: "WiFi Provision",
         appearance: &appearance::power_device::GENERIC_POWER_DEVICE,
     }))
     .unwrap();
@@ -70,16 +73,14 @@ where
                 Ok(conn) => {
                     info!("BLE central connected");
 
-                    let gatt = gatt_events_task(&server, &conn);
-                    let custom = custom_task(&server, &conn, &stack);
-
-                    select(gatt, custom).await;
+                    let _ = gatt_events_task(&server, &conn).await;
 
                     info!("BLE connection closed");
                 }
 
                 Err(e) => {
                     warn!("BLE advertising error: {:?}", e);
+
                     Timer::after_millis(100).await;
                 }
             }
@@ -113,8 +114,7 @@ where
     let len = AdStructure::encode_slice(
         &[
             AdStructure::Flags(LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED),
-            AdStructure::CompleteLocalName(b"I WANT BOOBIES"),
-            AdStructure::CompleteServiceUuids16(&[[0x0f, 0x18]]),
+            AdStructure::CompleteLocalName(b"WiFi Provision"),
         ],
         &mut advertiser_data,
     )?;
@@ -129,7 +129,7 @@ where
         )
         .await?;
 
-    info!("BLE advertising as 'Trouble Example'");
+    info!("BLE advertising as 'WiFi Provision'");
 
     let conn = advertiser.accept().await?.with_attribute_server(server)?;
 
@@ -145,53 +145,114 @@ async fn gatt_events_task<P>(
 where
     P: PacketPool,
 {
-    let level = server.battery_service.level;
-    let status_handle = server.battery_service.status.handle;
+    let ssid_handle = server.wifi_service.ssid.handle;
+    let password_handle = server.wifi_service.password.handle;
+    let status = server.wifi_service.status;
 
-    let mut status = false;
+    let mut pending_ssid: Option<String<32>> = None;
+    let mut pending_password: Option<String<64>> = None;
+
+    info!("Waiting for WiFi credentials");
 
     loop {
         match conn.next().await {
             GattConnectionEvent::Disconnected { reason } => {
                 info!("BLE disconnected: {:?}", reason);
+
                 return Ok(());
             }
 
             GattConnectionEvent::Gatt { event } => {
                 let reply = match event {
-                    GattEvent::Read(event) => {
-                        if event.handle() == level.handle {
-                            let value = conn.get(&level);
+                    GattEvent::Write(event) => {
+                        if event.handle() == ssid_handle {
+                            match event.validate(1, 32) {
+                                Ok(()) => {
+                                    event.with_data(|offset, data| {
+                                        if offset != 0 {
+                                            warn!(
+                                                "SSID write has \
+                                                     non-zero offset: {}",
+                                                offset
+                                            );
+                                            return;
+                                        }
 
-                            info!("Battery level read: {:?}", value);
+                                        match core::str::from_utf8(data) {
+                                            Ok(value) => {
+                                                let mut ssid = String::<32>::new();
 
-                            event.accept()
-                        } else if event.handle() == status_handle {
-                            event.accept_unprocessed(&status)
+                                                if ssid.push_str(value).is_ok() {
+                                                    pending_ssid = Some(ssid);
+
+                                                    info!("Received SSID");
+                                                } else {
+                                                    warn!("SSID too long");
+                                                }
+                                            }
+
+                                            Err(_) => {
+                                                warn!(
+                                                    "SSID is not \
+                                                         valid UTF-8"
+                                                );
+                                            }
+                                        }
+                                    });
+
+                                    event.accept()
+                                }
+
+                                Err(e) => event.reject(e),
+                            }
+                        } else if event.handle() == password_handle {
+                            match event.validate(1, 64) {
+                                Ok(()) => {
+                                    event.with_data(|offset, data| {
+                                        if offset != 0 {
+                                            warn!(
+                                                "Password write has \
+                                                     non-zero offset: {}",
+                                                offset
+                                            );
+                                            return;
+                                        }
+
+                                        match core::str::from_utf8(data) {
+                                            Ok(value) => {
+                                                let mut password = String::<64>::new();
+
+                                                if password.push_str(value).is_ok() {
+                                                    pending_password = Some(password);
+
+                                                    info!("Received password");
+                                                } else {
+                                                    warn!("Password too long");
+                                                }
+                                            }
+
+                                            Err(_) => {
+                                                warn!(
+                                                    "Password is not \
+                                                         valid UTF-8"
+                                                );
+                                            }
+                                        }
+                                    });
+
+                                    event.accept()
+                                }
+
+                                Err(e) => event.reject(e),
+                            }
                         } else {
                             event.accept()
                         }
                     }
 
-                    GattEvent::Write(event) => {
-                        if event.handle() == status_handle {
-                            match event.validate(1, 1) {
-                                Ok(()) => {
-                                    event.with_data(|offset, data| {
-                                        if data.len() == 1 {
-                                            assert_eq!(offset, 0);
-
-                                            status = data[0] != 0;
-
-                                            info!("Status written: {}", status);
-                                        }
-                                    });
-
-                                    event.accept_unprocessed()
-                                }
-
-                                Err(err) => event.reject(err),
-                            }
+                    GattEvent::Read(event) => {
+                        if event.handle() == status.handle {
+                            event.accept()
                         } else {
                             event.accept()
                         }
@@ -203,39 +264,53 @@ where
                 if let Ok(reply) = reply {
                     reply.send().await;
                 }
+
+                info!(
+                    "Credential state: ssid={}, password={}",
+                    pending_ssid.is_some(),
+                    pending_password.is_some()
+                );
+
+                if pending_ssid.is_some() && pending_password.is_some() {
+                    info!("Credentials complete");
+
+                    let ssid = pending_ssid.take().unwrap();
+
+                    let password = pending_password.take().unwrap();
+
+                    info!("SSID: {}", ssid.as_str());
+
+                    info!("Password length: {}", password.len());
+
+                    match crate::channels::WIFI_CREDENTIALS.try_send((ssid, password)) {
+                        Ok(()) => {
+                            info!("Credentials handed to WiFi task");
+
+                            if status
+                                .notify(conn, &STATUS_CREDENTIALS_RECEIVED, true)
+                                .await
+                                .is_err()
+                            {
+                                warn!("Failed to notify status");
+                            }
+                        }
+
+                        Err(_) => {
+                            warn!("WIFI_CREDENTIALS channel full");
+
+                            if status
+                                .notify(conn, &STATUS_CHANNEL_FULL, true)
+                                .await
+                                .is_err()
+                            {
+                                warn!("Failed to notify status");
+                            }
+                        }
+                    }
+                }
             }
 
             _ => {}
         }
-    }
-}
-
-async fn custom_task<C, P>(
-    server: &Server<'_>,
-    conn: &GattConnection<'_, '_, P>,
-    stack: &Stack<'_, C, P>,
-) where
-    C: Controller,
-    P: PacketPool,
-{
-    let level = server.battery_service.level;
-
-    let mut battery = 10u8;
-
-    loop {
-        info!("BLE notifying battery level: {}", battery);
-
-        if level.notify(conn, &battery, true).await.is_err() {
-            info!("BLE notification failed");
-            return;
-        }
-
-        if let Ok(rssi) = conn.raw().rssi(stack).await {
-            info!("BLE RSSI: {:?}", rssi);
-        }
-
-        battery = if battery >= 100 { 10 } else { battery + 10 };
-
-        Timer::after_secs(2).await;
     }
 }

@@ -31,12 +31,14 @@ esp-radio = {
         "coex",
         "log-04",
         "unstable",
-        #"print-logs-from-driver",
+        "print-logs-from-driver",
     ],
 }
 embassy-net = { version = "0.9", features = ["dhcpv4", "tcp", "udp", "dns", "medium-ethernet"] }
 rust-mqtt = { version = "0.5.1", default-features = false, features = ["v5", "alloc", "log"] }
 trouble-host = { git = "https://github.com/embassy-rs/trouble", features = ["default-packet-pool-mtu-255", "security"] }
+heapless = "0.9"
+
 
 # Embassy
 embassy-executor = { version = "0.10.0", features = [] }

@@ -30,8 +30,8 @@ esp-radio = {
         "ble",
         "coex",
         "log-04",
-        "print-logs-from-driver",
         "unstable",
+        #"print-logs-from-driver",
     ],
 }
 embassy-net = { version = "0.9", features = ["dhcpv4", "tcp", "udp", "dns", "medium-ethernet"] }
@@ -88,4 +88,3 @@ esp-println =           { git = "https://github.com/embassy-rs/esp-hal.git", rev
 esp-radio =             { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
 esp-rtos =              { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
 esp-storage =           { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
-embassy-executor =      { git = "https://github.com/embassy-rs/embassy.git", rev = "1d3c3de"}

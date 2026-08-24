@@ -22,9 +22,30 @@ esp-alloc = "0.10"
 static_cell = "2.1"
 
 # Connection
-esp-radio = { version = "0.18", features = ["esp32s3", "wifi", "log-04"] }
+esp-radio = {
+    version = "1.0.0-beta.0",
+    features = [
+        "esp32s3",
+        "wifi",
+        "ble",
+        "coex",
+        "log-04",
+        "print-logs-from-driver",
+        "unstable",
+    ],
+}
 embassy-net = { version = "0.9", features = ["dhcpv4", "tcp", "udp", "dns", "medium-ethernet"] }
 rust-mqtt = { version = "0.5.1", default-features = false, features = ["v5", "alloc", "log"] }
+trouble-host = { git = "https://github.com/embassy-rs/trouble", features = ["default-packet-pool-mtu-255", "security"] }
+
+# esp-radio = { version = "1.0.0-beta.0", features = [
+#     "esp32s3",
+#     "wifi",
+#     "ble",
+#     "coex",
+#     "log-04",
+#     "unstable",
+# ] }
 
 # Embassy
 embassy-executor = { version = "0.10.0", features = [] }
@@ -57,3 +78,14 @@ codegen-units = 1 # LLVM can perform better optimizations using a single thread
 debug = 2         # prefer slower builds but better debugging experience
 lto = 'fat'
 opt-level = 's'
+
+[patch.crates-io]
+esp-alloc =             { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
+esp-backtrace =         { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
+esp-bootloader-esp-idf ={ git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
+esp-hal =               { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
+esp-println =           { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
+esp-radio =             { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
+esp-rtos =              { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
+esp-storage =           { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
+embassy-executor =      { git = "https://github.com/embassy-rs/embassy.git", rev = "1d3c3de"}

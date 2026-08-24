@@ -3,9 +3,7 @@ use esp_radio::wifi::{Config as WifiConfig, WifiController, sta::StationConfig};
 use log::{info, warn};
 
 #[embassy_executor::task]
-pub async fn net_task(
-    mut runner: embassy_net::Runner<'static, esp_radio::wifi::Interface<'static>>,
-) {
+pub async fn net_task(mut runner: embassy_net::Runner<'static, esp_radio::wifi::Interface>) {
     runner.run().await;
 }
 

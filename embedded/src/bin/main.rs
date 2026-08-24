@@ -4,6 +4,7 @@
 use embassy_executor::Spawner;
 use embedded::tasks::mqtt::mqtt_task;
 use embedded::tasks::{
+    ble::ble_task,
     dht11::dht11_task,
     network::{net_task, wifi_task},
 };
@@ -14,10 +15,11 @@ use esp_hal::{
     clock::CpuClock,
     delay::Delay,
     gpio::{DriveMode, Flex, OutputConfig, Pull},
-    interrupt::software::SoftwareInterruptControl,
     timer::timg::TimerGroup,
 };
+use esp_radio::ble::controller::BleConnector;
 use log::info;
+use trouble_host::prelude::ExternalController;
 
 esp_bootloader_esp_idf::esp_app_desc!();
 
@@ -35,48 +37,52 @@ async fn main(spawner: Spawner) {
     esp_alloc::heap_allocator!(size: 64 * 1024);
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
-    let sw_int = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
-    esp_rtos::start(timg0.timer0, sw_int.software_interrupt0);
+    esp_rtos::start(timg0.timer0, peripherals.FROM_CPU_INTR0);
     info!("Embassy + esp-rtos started");
 
-    let (controller, interfaces) = esp_radio::wifi::new(peripherals.WIFI, Default::default())
-        .expect("Failed to initialize WiFi");
+    // let controller = esp_radio::wifi::WifiController::new(peripherals.WIFI, Default::default())
+    //     .expect("Failed to initialize WiFi");
+    //
+    // let station = esp_radio::wifi::Interface::station();
+    // let wifi = wifi::create(controller, station);
+    //
+    // let wifi::Wifi {
+    //     controller,
+    //     stack,
+    //     runner,
+    // } = wifi;
 
-    let wifi = wifi::create(controller, interfaces.station);
-    let wifi::Wifi {
-        controller,
-        stack,
-        runner,
-    } = wifi;
+    let connector =
+        BleConnector::new(peripherals.BT, Default::default()).expect("Failed to initialize BLE");
 
-    spawner.spawn(net_task(runner).unwrap());
-    info!("Network runner started");
+    let controller: ExternalController<_, 20> = ExternalController::new(connector);
 
-    spawner.spawn(wifi_task(controller, WIFI_SSID, WIFI_PASSWORD).unwrap());
-    info!("WiFi task started");
+    spawner.spawn(ble_task(controller).unwrap());
+    // spawner.spawn(wifi_task(controller, WIFI_SSID, WIFI_PASSWORD).unwrap());
+    // info!("WiFi task started");
 
-    while !stack.is_config_up() {
-        embassy_time::Timer::after_secs(1).await;
-    }
-    info!("Network is up");
+    // while !stack.is_config_up() {
+    //     embassy_time::Timer::after_secs(1).await;
+    // }
+    // info!("Network is up");
+    //
+    // spawner.spawn(mqtt_task(stack).unwrap());
+    // info!("MQTT task started");
 
-    spawner.spawn(mqtt_task(stack).unwrap());
-    info!("MQTT task started");
-
-    let mut dht_pin = Flex::new(peripherals.GPIO4);
-    dht_pin.apply_output_config(
-        &OutputConfig::default()
-            .with_drive_mode(DriveMode::OpenDrain)
-            .with_pull(Pull::None),
-    );
-    dht_pin.set_output_enable(true);
-    dht_pin.set_input_enable(true);
-    dht_pin.set_high();
-
-    let delay = Delay::new();
-    let dht = Dht11::new(dht_pin, delay);
-
-    spawner.spawn(dht11_task(dht).unwrap());
+    // let mut dht_pin = Flex::new(peripherals.GPIO4);
+    // dht_pin.apply_output_config(
+    //     &OutputConfig::default()
+    //         .with_drive_mode(DriveMode::OpenDrain)
+    //         .with_pull(Pull::None),
+    // );
+    // dht_pin.set_output_enable(true);
+    // dht_pin.set_input_enable(true);
+    // dht_pin.set_high();
+    //
+    // let delay = Delay::new();
+    // let dht = Dht11::new(dht_pin, delay);
+    //
+    // spawner.spawn(dht11_task(dht).unwrap());
 
     info!("Tasks spawned");
 }

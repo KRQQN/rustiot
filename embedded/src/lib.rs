@@ -3,7 +3,6 @@
 // Explicitly bringing in alloc due to no_std
 extern crate alloc;
 
-pub mod ble;
 pub mod channels;
 pub mod tasks;
 pub mod wifi;

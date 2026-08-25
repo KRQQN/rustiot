@@ -4,5 +4,6 @@
 extern crate alloc;
 
 pub mod channels;
+pub mod config;
 pub mod tasks;
 pub mod wifi;

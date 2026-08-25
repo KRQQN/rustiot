@@ -18,6 +18,7 @@ use esp_hal::{
     timer::timg::TimerGroup,
 };
 use esp_radio::ble::controller::BleConnector;
+use esp_storage::FlashStorage;
 use log::info;
 use trouble_host::prelude::ExternalController;
 
@@ -34,6 +35,8 @@ async fn main(spawner: Spawner) {
     esp_alloc::heap_allocator!(size: 128 * 1024);
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
+    let storage = FlashStorage::new(peripherals.FLASH);
+
     esp_rtos::start(timg0.timer0, peripherals.FROM_CPU_INTR0);
     info!("Embassy + esp-rtos started");
 
@@ -59,7 +62,7 @@ async fn main(spawner: Spawner) {
     spawner.spawn(net_task(runner).unwrap());
     info!("Network runner started");
 
-    spawner.spawn(wifi_task(controller).unwrap());
+    spawner.spawn(wifi_task(controller, storage).unwrap());
     info!("WiFi task started");
 
     while !stack.is_config_up() {

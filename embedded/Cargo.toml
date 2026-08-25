@@ -20,6 +20,12 @@ esp-rtos = { version = "0.3.0", features = [
 ] }
 esp-alloc = "0.10"
 static_cell = "2.1"
+embedded-storage = "0.3"
+esp-storage = {
+    git = "https://github.com/embassy-rs/esp-hal.git",
+    rev = "7af0919e56e8298a7cb429da7f078757e350d842",
+    features = ["esp32s3", "embedded-storage"]
+}
 
 # Connection
 esp-radio = {
@@ -80,4 +86,3 @@ esp-hal =               { git = "https://github.com/embassy-rs/esp-hal.git", rev
 esp-println =           { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
 esp-radio =             { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
 esp-rtos =              { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }
-esp-storage =           { git = "https://github.com/embassy-rs/esp-hal.git", rev="7af0919e56e8298a7cb429da7f078757e350d842" }

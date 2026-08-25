@@ -159,7 +159,7 @@ pub async fn mqtt_task(stack: Stack<'static>) {
                     );
 
                     let payload = format!(
-                        r#"{{"temp":{},"hum":{}}}"#,
+                            r#"{{"data":{{"temp":{},"hum":{}}}}}"#,
                         reading.temperature, reading.humidity
                     );
 

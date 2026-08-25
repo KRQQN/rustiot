@@ -20,7 +20,8 @@ impl TelemetryHandler {
 
         let point = Point::new("telemetry")
             .tag("device_id", device_id)
-            .field("value", message.value);
+            .field("temperature", message.data.temp.clone())
+            .field("humidity", message.data.hum.clone());
 
         self.influx.write(vec![point]).await?;
 

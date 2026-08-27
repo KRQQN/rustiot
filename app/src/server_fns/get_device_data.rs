@@ -1,9 +1,6 @@
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "ssr")]
-use influxdb3_client::{Client, ClientConfig};
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeviceReading {
     pub time: String,
@@ -19,22 +16,10 @@ pub async fn get_device_data(
 ) -> Result<Vec<DeviceReading>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
-        let host =
-            std::env::var("INFLUX_HOST").unwrap_or_else(|_| "http://localhost:8181".to_string());
-        let token = std::env::var("INFLUX_TOKEN").expect("INFLUX_TOKEN must be set");
-        let database =
-            std::env::var("INFLUX_DATABASE").unwrap_or_else(|_| "your_database".to_string());
+        use crate::structs::app_state::AppState;
 
-        let client = Client::new(
-            ClientConfig::builder()
-                .host(&host)
-                .token(&token)
-                .database(&database)
-                .build()
-                .map_err(|e| -> ServerFnError { ServerFnError::ServerError(e.to_string()) })?,
-        )
-        .await
-        .map_err(|e| -> ServerFnError { ServerFnError::ServerError(e.to_string()) })?;
+        let app_state = expect_context::<AppState>();
+        let client = &app_state.influx;
 
         let limit = limit.unwrap_or(100);
 
@@ -51,6 +36,7 @@ pub async fn get_device_data(
             .param("limit", limit as i64)
             .await
             .map_err(|e| -> ServerFnError { ServerFnError::ServerError(e.to_string()) })?;
+
         let mut readings = Vec::new();
 
         for row in result {
@@ -70,7 +56,6 @@ pub async fn get_device_data(
 
     #[cfg(not(feature = "ssr"))]
     {
-        // This branch is never executed on the client
         unreachable!()
     }
 }

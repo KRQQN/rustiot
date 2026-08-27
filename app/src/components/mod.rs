@@ -10,3 +10,4 @@ pub mod platform;
 pub mod side_menu;
 pub mod signup_form;
 pub mod solutions;
+pub mod toast;

@@ -7,6 +7,7 @@ use crate::{
             toolbar::PanelToolbar,
         },
         side_menu::SideMenu,
+        toast::InfluxToast,
     },
     data,
 };
@@ -107,6 +108,8 @@ pub fn DashboardArea() -> impl IntoView {
                     finish_current();
                 }
             >
+                            <InfluxToast />
+
                 <PanelToolbar on_add=add_panel />
                 <For
                     each=move || panels.get()

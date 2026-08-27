@@ -1,0 +1,6 @@
+[cargo]
+features = ["ssr"]
+allFeatures = false
+
+[check]
+features = ["ssr"]

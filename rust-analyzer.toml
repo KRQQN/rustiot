@@ -1,0 +1,14 @@
+# Default for the whole workspace = Leptos / normal targets
+[cargo]
+features = ["ssr"]
+allFeatures = false
+
+[check]
+command = "check"
+features = ["ssr"]
+
+[procMacro]
+enable = true
+
+[diagnostics]
+disabled = ["unresolved-proc-macro"]

@@ -1,11 +1,11 @@
 [cargo]
 target = "xtensa-esp32s3-none-elf"
 allTargets = false
-features = ["esp32s3"]
-
-[cargo.extraEnv]
-RUSTUP_TOOLCHAIN = "esp"
+features = []
 
 [check]
-allTargets = false
+command = "check"
 extraArgs = ["--target", "xtensa-esp32s3-none-elf"]
+
+[procMacro]
+enable = true

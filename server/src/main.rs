@@ -3,11 +3,12 @@ mod auth;
 use crate::auth::middleware::auth_middleware;
 use app::*;
 use axum::{body::Body, http::Request, middleware, routing::post, Router};
+use influxdb3_client::{Client, ClientConfig};
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
 use sqlx::postgres::PgPoolOptions;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 use tower_cookies::CookieManagerLayer;
 
 #[tokio::main]
@@ -28,9 +29,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .connect("postgres://leptos:leptos@localhost:5432/leptos")
         .await?;
 
+    let influx = {
+        let host = std::env::var("INFLUX_HOST").unwrap_or_else(|_| "http://localhost:8181".into());
+        let token = std::env::var("INFLUX_TOKEN").expect("INFLUX_TOKEN must be set");
+        let database = std::env::var("INFLUX_DATABASE").unwrap_or_else(|_| "yolo".into());
+
+        Client::new(
+            ClientConfig::builder()
+                .host(&host)
+                .token(&token)
+                .database(&database)
+                .build()?,
+        )
+        .await?
+    };
+
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
         pg_pool,
+        influx: Arc::new(influx),
     };
 
     let app = Router::new()

@@ -71,26 +71,27 @@ pub fn DashboardExample(data: RwSignal<DashboardData>, mock: bool) -> impl IntoV
     });
     view! {
             <div class="space-y-1 p-2">
+                    // TODO: add mock points for these
+                    // <div class="h-[13rem] w-full">
+                    //     <Show
+                    //         when=move|| mock
+                    //         fallback=move || {
+                    //             view! {
+                    //                 <BarChartMock/>
+                    //             }
+                    //         }
+                    //     >
+                    //         <EBarChart labels=labels values=chart_values/>
+                    //     </Show>
+                    // </div>
 
-                    <div class="h-[13rem] w-full">
-                        <Show
-                            when=move|| mock
-                            fallback=move || {
-                                view! {
-                                    <BarChartMock/>
-                                }
-                            }
-                        >
-                            <EBarChart labels=labels values=chart_values/>
-                        </Show>
-                    </div>
-
-                    <div class="fill-white w-full h-[230px] ">
-                        <ELineChart
-                            labels=labels
-                            values=chart_values
-                        />
-                    </div>
+                    // <div class="fill-white w-full h-[230px] ">
+                    //     <ELineChart
+                    //         points=points
+                    //         //labels=labels
+                    //         //values=chart_values
+                    //     />
+                    // </div>
 
             <div class="grid grid-cols-[1fr_1fr_0.9fr] gap-3">
         // Trends

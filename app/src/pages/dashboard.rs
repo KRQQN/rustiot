@@ -2,24 +2,17 @@ use crate::{
     components::{
         dashboard::{
             interaction_handler::InteractionHandler,
-            panel::{Panel, PanelInteraction},
+            panel::{Panel, PanelConfig, PanelInteraction},
             panel_placer::{PanelLayout, PanelPlacer},
             toolbar::PanelToolbar,
         },
         side_menu::SideMenu,
-        toast::InfluxToast,
+        // toast::InfluxToast,
     },
     data,
 };
 use leptos::{html, prelude::*};
 use web_sys::MouseEvent;
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum PanelType {
-    BarChart,
-    LineChart,
-    CalendarHeatmap,
-}
 
 #[component]
 pub fn DashboardArea() -> impl IntoView {
@@ -30,23 +23,25 @@ pub fn DashboardArea() -> impl IntoView {
     const GRID_SIZE: f64 = 20.0;
     const MARGIN: f64 = 10.0;
 
-    let add_panel = Callback::new(move |panel_type: PanelType| {
+    let add_panel = Callback::new(move |cfg: PanelConfig| {
         set_panels.update(|panels| {
             let id = format!("panel-{}", panels.len() + 1);
 
-            let mut panel = data::dummy::new_panel(panel_type, id);
+            // Use the selected type + the extra config
+            let mut panel = data::dummy::new_panel(cfg, id);
+
+            // Optional: store source / timespan on the panel if your model supports it
+            // panel.data_source = cfg.data_source;
+            // panel.timespan = cfg.timespan;
+            // or pass them into new_panel if you change its signature
 
             let others: Vec<&PanelLayout> = panels.iter().map(|p| &p.layout).collect();
-
             let (x, y) = PanelPlacer::find_nearest_free(&panel.layout, &others, GRID_SIZE, MARGIN);
-
             panel.layout.x = x;
             panel.layout.y = y;
-
             panels.push(panel);
         });
     });
-
     let finish_current = move || {
         let Some(interaction) = interaction.get() else {
             return;
@@ -70,6 +65,7 @@ pub fn DashboardArea() -> impl IntoView {
 
     view! {
         <div class="flex min-h-screen bg-slate-100">
+            // <InfluxToast/>
             <SideMenu />
             <div
                 node_ref=canvas_ref
@@ -108,8 +104,6 @@ pub fn DashboardArea() -> impl IntoView {
                     finish_current();
                 }
             >
-                            <InfluxToast />
-
                 <PanelToolbar on_add=add_panel />
                 <For
                     each=move || panels.get()

@@ -1,4 +1,5 @@
 pub mod challenges;
+pub mod chart;
 pub mod charts;
 pub mod dashboard;
 pub mod dashboard_example;

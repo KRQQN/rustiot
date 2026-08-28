@@ -11,6 +11,19 @@ pub struct Panel {
     pub content: ViewFn,
     pub layout: PanelLayout,
 }
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PanelContent {
+    BarChart,
+    LineChart,
+    CalendarHeatmap,
+}
+
+#[derive(Clone)]
+pub struct PanelConfig {
+    pub panel_type: PanelContent,
+    pub data_source: String,
+    pub timespan: String,
+}
 
 #[derive(Clone)]
 pub enum PanelInteraction {

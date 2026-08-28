@@ -11,15 +11,16 @@ use web_sys::ResizeObserver;
 
 #[component]
 pub fn ELineChart(
-    #[prop(into)] labels: Signal<Vec<String>>,
-    #[prop(into)] values: Signal<Vec<f64>>,
+    // #[prop(into)] labels: Signal<Vec<String>>,
+    // #[prop(into)] values: Signal<Vec<f64>>,
+    #[prop(into)] points: Signal<Vec<Value>>,
 ) -> impl IntoView {
     let node = NodeRef::<html::Div>::new();
     let chart = StoredValue::new(None::<EChart>);
 
-    let max = Signal::derive(move || values.get().iter().copied().fold(0.0, f64::max));
+    //let max = Signal::derive(move || values.get().iter().copied().fold(0.0, f64::max));
 
-    #[cfg(not(feature = "ssr"))]
+    //#[cfg(not(feature = "ssr"))]
     {
         Effect::new(move |_| {
             let Some(div) = node.get() else {
@@ -55,13 +56,18 @@ pub fn ELineChart(
                     "bottom": 40
                 },
                 "xAxis": {
-                    "type": "category",
+                    "type": "time",
                     "boundaryGap": false,
-                    "data": labels.get(),
+                    "axisLabel": {
+                        "formatter": "{dd} {MMM}",
+                        "interval": "auto",
+                        "rotate": 0,
+                        "fontSize": 11,
+                        "color": "rgba(255,255,255,0.55)"
+                    }
                 },
                 "yAxis": {
                     "type": "value",
-                    "max": max.get(),
                     "splitLine": {
                         "lineStyle": {
                             "color": "rgba(255,255,255,0.08)",
@@ -72,7 +78,7 @@ pub fn ELineChart(
                 "series": [{
                     "type": "line",
                     "smooth": true,
-                    "data": values.get(),
+                    "data": points.get(),
                     "areaStyle": {
                         "color": {
                             "type": "linear",
@@ -140,16 +146,11 @@ pub fn ELineChart(
 }
 
 #[component]
-pub fn EBarChart(
-    #[prop(into)] labels: Signal<Vec<String>>,
-    #[prop(into)] values: Signal<Vec<f64>>,
-) -> impl IntoView {
+pub fn EBarChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
     let node = NodeRef::<html::Div>::new();
     let chart = StoredValue::new(None::<EChart>);
 
-    let max = Signal::derive(move || values.get().iter().copied().fold(0.0, f64::max));
-
-    #[cfg(not(feature = "ssr"))]
+    //#[cfg(not(feature = "ssr"))]
     {
         // Create the chart once when the DOM node is ready
         Effect::new(move |_| {
@@ -187,15 +188,17 @@ pub fn EBarChart(
                     "bottom": 40
                 },
                 "xAxis": {
-                    "type": "category",
-                    "data": labels.get(),
-                    "axisTick": {
-                        "show": false
-                    }
+                "type": "time",
+                    "axisLabel": {
+                        "formatter": "{dd} {MMM}",
+                        "interval": "auto",
+                        "rotate": 0,
+                        "fontSize": 11,
+                        "color": "rgba(255,255,255,0.55)"
+                    },
                 },
                 "yAxis": {
                     "type": "value",
-                    "max": max.get(),
                     "splitLine": {
                         "lineStyle": {
                             "color": "rgba(255,255,255,0.08)",
@@ -205,7 +208,7 @@ pub fn EBarChart(
                 },
                 "series": [{
                     "type": "bar",
-                    "data": values.get(),
+                    "data": points.get(),
                     "barWidth": "55%",
                     "itemStyle": {
                         "borderRadius": [8, 8, 0, 0],

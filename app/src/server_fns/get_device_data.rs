@@ -21,9 +21,11 @@ pub async fn get_device_data(
 
         let app_state = expect_context::<AppState>();
         let client = &app_state.influx;
-        let limit = limit.unwrap_or(500);
+        let limit = limit.unwrap_or(100);
 
         let interval = match timespan.as_str() {
+            "1h" => "1 hour",
+            "6h" => "6 hours",
             "24h" => "1 day",
             "7d" => "7 days",
             "30d" => "30 days",
@@ -36,7 +38,7 @@ pub async fn get_device_data(
              FROM telemetry \
              WHERE time >= now() - interval '{interval}' \
              AND device_id = $device_id \
-             ORDER BY time ASC \
+             ORDER BY time DESC \
              LIMIT $limit"
         );
 
@@ -51,9 +53,6 @@ pub async fn get_device_data(
         for row in result {
             let row =
                 row.map_err(|e| -> ServerFnError { ServerFnError::ServerError(e.to_string()) })?;
-
-            // Debug once if needed:
-            leptos::logging::log!("raw time = {:?}", row["time"]);
 
             let time = cell_to_time_string(&row["time"]);
 
@@ -77,28 +76,46 @@ use influxdb3_client::Value;
 
 #[cfg(feature = "ssr")]
 fn cell_to_time_string(cell: &Value) -> String {
-    use chrono::{TimeZone, Utc};
+    use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 
+    // Influx may return time as a string without a timezone:
+    // "2026-08-28T13:50:00.464944148"
+    //
+    // Explicitly interpret that timestamp as UTC.
     if let Some(s) = cell.as_str() {
-        return s.to_string();
+        if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
+            return dt.with_timezone(&Utc).to_rfc3339();
+        }
+
+        if let Ok(dt) = NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S%.f") {
+            return Utc.from_utc_datetime(&dt).to_rfc3339();
+        }
+
+        // If it's already a timestamp-like string but parsing failed,
+        // make the UTC assumption explicit.
+        return format!("{s}Z");
     }
 
-    // nanosecond epoch (most common for time)
+    // Nanosecond Unix timestamp.
     if let Some(ns) = cell.as_i64() {
         let secs = ns / 1_000_000_000;
         let nsecs = (ns % 1_000_000_000) as u32;
+
         if let Some(dt) = Utc.timestamp_opt(secs, nsecs).single() {
             return dt.to_rfc3339();
         }
     }
 
-    // Debug fallback: Timestamp(1787904244266127876)
+    // Fallback for Debug representation such as:
+    // Timestamp(1787904244266127876)
     let debug = format!("{cell:?}");
+
     if let Some(start) = debug.find('(') {
         if let Some(end) = debug.find(')') {
             if let Ok(ns) = debug[start + 1..end].parse::<i64>() {
                 let secs = ns / 1_000_000_000;
                 let nsecs = (ns % 1_000_000_000) as u32;
+
                 if let Some(dt) = Utc.timestamp_opt(secs, nsecs).single() {
                     return dt.to_rfc3339();
                 }

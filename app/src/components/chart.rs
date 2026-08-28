@@ -16,7 +16,7 @@ pub fn Chart(device_id: String, timespan: String, chart_type: PanelContent) -> i
             let timespan = timespan.clone();
             move || (device_id.clone(), timespan.clone())
         },
-        |(id, ts)| async move { get_device_data(id, ts, Some(500)).await },
+        |(id, ts)| async move { get_device_data(id, ts, Some(100)).await },
     );
 
     let points = Signal::derive(move || {

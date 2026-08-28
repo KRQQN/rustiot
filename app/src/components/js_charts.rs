@@ -52,7 +52,7 @@ pub fn ELineChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
                     "type": "time",
                     "boundaryGap": false,
                     "axisLabel": {
-                        "formatter": "{dd} {MMM}",
+                        "hideOverlap": true,
                         "interval": "auto",
                         "rotate": 0,
                         "fontSize": 11,
@@ -80,20 +80,47 @@ pub fn ELineChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
                             "x2": 0,
                             "y2": 1,
                             "colorStops": [
-                                { "offset": 0, "color": "rgba(103, 232, 249, 0.5)" },
-                                { "offset": 1, "color": "rgba(165, 243, 252, 0)" }
+                                {
+                                    "offset": 0,
+                                    "color": "rgba(103, 232, 249, 0.5)"
+                                },
+                                {
+                                    "offset": 1,
+                                    "color": "rgba(165, 243, 252, 0)"
+                                }
                             ]
                         }
                     },
                     "lineStyle": {
                         "width": 3,
                         "shadowBlur": 15,
-                        "color": "rgba(103, 232, 249, 0.8)"
+                        "color": "rgba(103, 232, 252, 0.8)"
                     }
                 }]
             });
 
             let js = js_sys::JSON::parse(&options.to_string()).unwrap();
+
+            // xAxis
+            let x_axis = js_sys::Reflect::get(&js, &JsValue::from_str("xAxis")).unwrap();
+
+            let axis_label =
+                js_sys::Reflect::get(&x_axis, &JsValue::from_str("axisLabel")).unwrap();
+
+            let formatter = js_sys::Function::new_with_args(
+                "value",
+                r#"
+            const date = new Date(value);
+
+            return new Intl.DateTimeFormat("en-GB", {
+                timeZone: "Europe/Madrid",
+                day: "2-digit",
+                month: "short"
+            }).format(date);
+        "#,
+            );
+
+            js_sys::Reflect::set(&axis_label, &JsValue::from_str("formatter"), &formatter).unwrap();
 
             chart.with_value(|slot| {
                 if let Some(c) = slot {
@@ -101,7 +128,6 @@ pub fn ELineChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
                 }
             });
         });
-
         Effect::new(move |_| {
             let Some(div) = node.get() else {
                 return;

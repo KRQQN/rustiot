@@ -2,7 +2,8 @@ use crate::components::chart::Chart;
 use crate::components::charts::DateValuePoint;
 use crate::components::dashboard::panel::{Panel, PanelConfig, PanelContent};
 use crate::components::dashboard::panel_placer::PanelLayout;
-use crate::components::js_charts::ECalendarHeatmap;
+use crate::components::js_charts::{ECalendarHeatmap, ELineChart};
+use crate::server_fns::get_device_data::DeviceReading;
 use chrono::{Duration, Local};
 use leptos::prelude::*;
 
@@ -78,35 +79,51 @@ pub fn chart_data() -> Vec<DateValuePoint> {
     }
 }
 
-pub fn db_read_get_panels() -> Vec<Panel> {
-    let chart_data = chart_data();
+#[server(GetDummyDeviceData)]
+pub async fn get_device_data(
+    device_id: String,
+    _timespan: String,
+    _limit: Option<u32>,
+) -> Result<Vec<DeviceReading>, ServerFnError> {
+    #[cfg(feature = "ssr")]
+    {
+        use chrono::{Duration, Utc};
 
-    let mut labels = chart_data
-        .iter()
-        .map(|p| p.date.format("%d %b").to_string())
-        .collect::<Vec<_>>();
-    labels.reverse();
+        let now = Utc::now();
 
-    let mut chart_values = chart_data.iter().map(|p| p.value).collect::<Vec<_>>();
-    chart_values.reverse();
+        let readings = (0..15)
+            .map(|i| {
+                // Spread 15 points evenly across the last 10 days.
+                let offset_days = (i as f64) * 10.0 / 14.0;
+                let time = now - Duration::seconds((offset_days * 24.0 * 60.0 * 60.0) as i64);
 
-    let labels = Signal::derive(move || labels.clone());
-    let chart_values = Signal::derive(move || chart_values.clone());
+                DeviceReading {
+                    time: time.to_rfc3339(),
+                    device_id: device_id.clone(),
 
-    let cdata = Signal::derive(calendar_heatmap_data);
-    let year = Signal::derive(|| "2026".to_string());
+                    humidity: 45.0 + (i as f64 * 1.7),
+                    temperature: 20.0 + (i as f64 * 0.5),
+                }
+            })
+            .collect();
 
+        Ok(readings)
+    }
+
+    #[cfg(not(feature = "ssr"))]
+    {
+        unreachable!()
+    }
+}
+
+pub async fn db_read_get_panels() -> Vec<Panel> {
     vec![
         Panel {
             id: "1".into(),
             title: "Liters".into(),
             content: ViewFn::from(move || {
                 view! {
-                    // TODO fix
-                    // <EBarChart
-                    //     values=chart_values
-                    //     labels=labels
-                    // />
+                    <Chart device_id="esp-rustiot".to_string() timespan="24h".to_string() chart_type=PanelContent::BarChart/>
                 }
                 .into_any()
             }),
@@ -122,10 +139,7 @@ pub fn db_read_get_panels() -> Vec<Panel> {
             title: "Temperature".into(),
             content: ViewFn::from(move || {
                 view! {
-                    // <ELineChart
-                    //     values=chart_values
-                    //     labels=labels
-                    // />
+                    <Chart device_id="esp-rustiot".to_string() timespan="24h".to_string() chart_type=PanelContent::LineChart/>
                 }
                 .into_any()
             }),
@@ -141,10 +155,7 @@ pub fn db_read_get_panels() -> Vec<Panel> {
             title: "Usage calendar".into(),
             content: ViewFn::from(move || {
                 view! {
-                    <ECalendarHeatmap
-                        values=cdata
-                        year=year
-                    />
+                    // TODO  CalendarHeatmap -> Low priority
                 }
                 .into_any()
             }),

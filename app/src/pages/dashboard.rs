@@ -9,7 +9,7 @@ use crate::{
         side_menu::SideMenu,
         // toast::InfluxToast,
     },
-    data,
+    data::{self, dummy::db_read_get_panels},
 };
 use leptos::{html, prelude::*};
 use web_sys::MouseEvent;
@@ -18,22 +18,23 @@ use web_sys::MouseEvent;
 pub fn DashboardArea() -> impl IntoView {
     let canvas_ref = NodeRef::<html::Div>::new();
     let (interaction, set_interaction) = signal::<Option<PanelInteraction>>(None);
-    let (panels, set_panels) = signal(data::dummy::db_read_get_panels());
+    let (panels, set_panels) = signal::<Vec<Panel>>(vec![]);
 
     const GRID_SIZE: f64 = 20.0;
     const MARGIN: f64 = 10.0;
+
+    #[cfg(not(feature = "ssr"))]
+    leptos::task::spawn_local(async move {
+        let loaded_panels = db_read_get_panels().await;
+        set_panels.set(loaded_panels);
+    });
 
     let add_panel = Callback::new(move |cfg: PanelConfig| {
         set_panels.update(|panels| {
             let id = format!("panel-{}", panels.len() + 1);
 
-            // Use the selected type + the extra config
             let mut panel = data::dummy::new_panel(cfg, id);
-
-            // Optional: store source / timespan on the panel if your model supports it
-            // panel.data_source = cfg.data_source;
-            // panel.timespan = cfg.timespan;
-            // or pass them into new_panel if you change its signature
+            // TODO Save user panels, read user panels
 
             let others: Vec<&PanelLayout> = panels.iter().map(|p| &p.layout).collect();
             let (x, y) = PanelPlacer::find_nearest_free(&panel.layout, &others, GRID_SIZE, MARGIN);

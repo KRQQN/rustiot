@@ -1,4 +1,3 @@
-use chrono::{DateTime, NaiveDateTime};
 use leptos::prelude::*;
 
 use crate::{
@@ -19,22 +18,6 @@ pub fn Chart(device_id: String, timespan: String, chart_type: PanelContent) -> i
         },
         |(id, ts)| async move { get_device_data(id, ts, Some(500)).await },
     );
-
-    // DEBUG
-    // Effect::new(move |_| match readings.get() {
-    //     None => {
-    //         leptos::logging::log!("fetched: still loading");
-    //     }
-    //     Some(Ok(data)) => {
-    //         leptos::logging::log!("fetched: {} readings", data.len());
-    //         if let Some(first) = data.first() {
-    //             leptos::logging::log!("  first time={:?} temp={}", first.time, first.temperature);
-    //         }
-    //     }
-    //     Some(Err(e)) => {
-    //         leptos::logging::log!("fetched: error = {:?}", e);
-    //     }
-    // });
 
     let points = Signal::derive(move || {
         readings

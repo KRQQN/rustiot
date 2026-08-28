@@ -10,17 +10,10 @@ use wasm_bindgen::JsValue;
 use web_sys::ResizeObserver;
 
 #[component]
-pub fn ELineChart(
-    // #[prop(into)] labels: Signal<Vec<String>>,
-    // #[prop(into)] values: Signal<Vec<f64>>,
-    #[prop(into)] points: Signal<Vec<Value>>,
-) -> impl IntoView {
+pub fn ELineChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
     let node = NodeRef::<html::Div>::new();
     let chart = StoredValue::new(None::<EChart>);
 
-    //let max = Signal::derive(move || values.get().iter().copied().fold(0.0, f64::max));
-
-    //#[cfg(not(feature = "ssr"))]
     {
         Effect::new(move |_| {
             let Some(div) = node.get() else {
@@ -150,7 +143,6 @@ pub fn EBarChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
     let node = NodeRef::<html::Div>::new();
     let chart = StoredValue::new(None::<EChart>);
 
-    //#[cfg(not(feature = "ssr"))]
     {
         // Create the chart once when the DOM node is ready
         Effect::new(move |_| {

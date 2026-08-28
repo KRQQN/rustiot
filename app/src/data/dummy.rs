@@ -2,8 +2,7 @@ use crate::components::chart::Chart;
 use crate::components::charts::DateValuePoint;
 use crate::components::dashboard::panel::{Panel, PanelConfig, PanelContent};
 use crate::components::dashboard::panel_placer::PanelLayout;
-use crate::components::js_charts::{EBarChart, ECalendarHeatmap, ELineChart};
-use crate::server_fns::get_device_data::get_device_data;
+use crate::components::js_charts::ECalendarHeatmap;
 use chrono::{Duration, Local};
 use leptos::prelude::*;
 

@@ -19,7 +19,6 @@ pub async fn dht11_task(mut dht: Dht11<Flex<'static>, Delay>) {
             }
         }
 
-        // DHT11 needs ~1–2s between readings
-        Timer::after(Duration::from_secs(10)).await;
+        Timer::after(Duration::from_secs(600)).await;
     }
 }

@@ -11,6 +11,8 @@ FROM debian:trixie-slim
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/middleware ./middleware
+COPY --from=builder /app/target/release/middleware /app/middleware
 
-CMD ["./middleware"]
+EXPOSE 8080
+
+CMD ["/app/middleware"]

@@ -26,7 +26,7 @@ impl Config {
             host: env::var("INFLUX_HOST")?,
             port: env::var("INFLUX_PORT")?.parse()?,
             database: env::var("INFLUX_DATABASE")?,
-            token: env::var("INFLUX_TOKEN")?,
+            token: super::influx_token::load_influx_token()?,
         };
 
         Ok(Self { mqtt, influx })

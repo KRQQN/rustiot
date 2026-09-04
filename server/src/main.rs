@@ -1,12 +1,13 @@
 mod auth;
 
-use crate::auth::middleware::auth_middleware;
+use crate::auth::{middleware::auth_middleware, protected_pages::protected_pages};
 use app::*;
 use axum::{body::Body, http::Request, middleware, routing::post, Router};
 use influxdb3_client::{Client, ClientConfig};
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
+use shared::dto::CurrentUser;
 use sqlx::postgres::PgPoolOptions;
 use std::{sync::Arc, time::Duration};
 use tower_cookies::CookieManagerLayer;
@@ -56,6 +57,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             post({
                 let app_state = app_state.clone();
                 move |req: Request<Body>| {
+                    let current_user = req.extensions().get::<CurrentUser>().cloned();
+
                     handle_server_fns_with_context(
                         {
                             let app_state = app_state.clone();
@@ -80,6 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 move || shell(leptos_options.clone())
             },
         )
+        .layer(middleware::from_fn(protected_pages))
         .layer(middleware::from_fn_with_state(
             app_state.clone(),
             auth_middleware,

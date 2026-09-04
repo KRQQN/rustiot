@@ -37,7 +37,7 @@ esp-radio = {
         "coex",
         "log-04",
         "unstable",
-        "print-logs-from-driver",
+        #"print-logs-from-driver",
     ],
 }
 embassy-net = { version = "0.9", features = ["dhcpv4", "tcp", "udp", "dns", "medium-ethernet"] }

@@ -1081,9 +1081,7 @@ dependencies = [
  "esp-wifi-sys-esp32",
  "esp-wifi-sys-esp32c2",
  "esp-wifi-sys-esp32c3",
- "esp-wifi-sys-esp32c5",
  "esp-wifi-sys-esp32c6",
- "esp-wifi-sys-esp32c61",
  "esp-wifi-sys-esp32h2",
  "esp-wifi-sys-esp32s2",
  "esp-wifi-sys-esp32s3",
@@ -1206,22 +1204,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "esp-wifi-sys-esp32c5"
-version = "0.2.0"
-source = "git+https://github.com/esp-rs/esp-wifi-sys.git?rev=2ea8e3e#2ea8e3e6c2f49be41b8536e0d3b7f8058a6c1aa6"
-
-[[package]]
 name = "esp-wifi-sys-esp32c6"
 version = "0.2.0"
 source = "git+https://github.com/esp-rs/esp-wifi-sys.git?rev=2ea8e3e#2ea8e3e6c2f49be41b8536e0d3b7f8058a6c1aa6"
 dependencies = [
  "log",
 ]
-
-[[package]]
-name = "esp-wifi-sys-esp32c61"
-version = "0.2.0"
-source = "git+https://github.com/esp-rs/esp-wifi-sys.git?rev=2ea8e3e#2ea8e3e6c2f49be41b8536e0d3b7f8058a6c1aa6"
 
 [[package]]
 name = "esp-wifi-sys-esp32h2"

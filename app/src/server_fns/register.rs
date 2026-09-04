@@ -1,5 +1,4 @@
-use crate::{server, structs::app_state::AppState};
-use leptos::server_fn::ServerFnError;
+use leptos::prelude::*;
 
 #[server(Register)]
 pub async fn register(email: String, password: String) -> Result<(), ServerFnError> {
@@ -10,19 +9,24 @@ pub async fn register(email: String, password: String) -> Result<(), ServerFnErr
             Argon2, PasswordHasher,
         };
         use leptos::prelude::*;
-        use sqlx::{query, query_as, PgPool};
+        use sqlx::query_as;
         use uuid::Uuid;
 
-        if email.trim().is_empty() {
+        use crate::AppState;
+
+        let email = email.trim().to_lowercase();
+
+        if email.is_empty() {
             return Err(ServerFnError::new("Email is required"));
         }
+
         if password.len() < 8 {
             return Err(ServerFnError::new("Password must be at least 8 characters"));
         }
 
         let app_state = expect_context::<AppState>();
 
-        let exists: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM users WHERE email = $1")
+        let exists: Option<(Uuid,)> = query_as("SELECT id FROM users WHERE email = $1")
             .bind(&email)
             .fetch_optional(&app_state.pg_pool)
             .await?;
@@ -42,18 +46,19 @@ pub async fn register(email: String, password: String) -> Result<(), ServerFnErr
 
         sqlx::query(
             r#"
-        INSERT INTO users (id, email, password_hash)
-        VALUES ($1, $2, $3)
-        "#,
+            INSERT INTO users (id, email, password_hash)
+            VALUES ($1, $2, $3)
+            "#,
         )
         .bind(user_id)
-        .bind(email)
+        .bind(&email)
         .bind(password_hash)
         .execute(&app_state.pg_pool)
         .await?;
 
         Ok(())
     }
+
     #[cfg(not(feature = "ssr"))]
     {
         let _ = (email, password);

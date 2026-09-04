@@ -52,7 +52,7 @@ pub fn App() -> impl IntoView {
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route
-                        path=StaticSegment("/register")
+                        path=StaticSegment("/login")
                         view=LoggedInHomePage
                         ssr=SsrMode::Async
                         />

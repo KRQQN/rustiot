@@ -1,19 +1,23 @@
+use chrono::{DateTime, Utc};
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 
-// temporary
+use uuid::Uuid;
+
+// Temporary
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Device {
-    pub id: i64,
+    pub id: Uuid,
     pub name: String,
-    pub device_type: String,
-    pub status: String,
-    pub last_seen: Option<String>,
+    pub device_type: Option<String>,
+    pub protocol: String,
+    pub is_active: bool,
+    pub last_seen_at: Option<DateTime<Utc>>,
 }
 
 #[component]
 pub fn DeviceCard(device: Device) -> impl IntoView {
-    let is_online = device.status == "online";
+    let is_online = device.is_active && device.last_seen_at.is_some();
 
     let status_dot = if is_online {
         "h-2 w-2 rounded-full bg-green-400"
@@ -21,7 +25,13 @@ pub fn DeviceCard(device: Device) -> impl IntoView {
         "h-2 w-2 rounded-full bg-slate-600"
     };
 
-    let status_label = if is_online { "Online" } else { "Offline" };
+    let status_label = if is_online {
+        "Online"
+    } else if !device.is_active {
+        "Disabled"
+    } else {
+        "Offline"
+    };
 
     let status_label_class = if is_online {
         "text-green-400"
@@ -29,9 +39,17 @@ pub fn DeviceCard(device: Device) -> impl IntoView {
         "text-slate-500"
     };
 
-    let last_seen = device.last_seen.unwrap_or_else(|| "Never".to_string());
+    let device_type = device
+        .device_type
+        .clone()
+        .unwrap_or_else(|| "Unknown".to_string());
 
-    let icon = device_icon(&device.device_type);
+    let last_seen = device
+        .last_seen_at
+        .map(|time| time.format("%Y-%m-%d %H:%M:%S UTC").to_string())
+        .unwrap_or_else(|| "Never".to_string());
+
+    let icon = device_icon(&device_type);
 
     view! {
         <article class="
@@ -63,7 +81,6 @@ pub fn DeviceCard(device: Device) -> impl IntoView {
             "></div>
 
             <div class="relative">
-
                 <div class="
                     flex
                     items-start
@@ -115,33 +132,52 @@ pub fn DeviceCard(device: Device) -> impl IntoView {
                         text-xs
                         text-slate-500
                     ">
-                        {device.device_type}
+                        {device_type}
                     </p>
                 </div>
 
                 <div class="
                     mt-6
-                    flex
-                    items-center
-                    justify-between
                     border-t
                     border-slate-800
                     pt-4
                 ">
-                    <span class="
-                        text-xs
-                        text-slate-600
+                    <div class="
+                        flex
+                        items-center
+                        justify-between
                     ">
-                        "Last seen"
-                    </span>
+                        <span class="text-xs text-slate-600">
+                            "Protocol"
+                        </span>
 
-                    <span class="
-                        text-xs
-                        font-medium
-                        text-slate-500
+                        <span class="
+                            text-xs
+                            font-medium
+                            text-slate-500
+                        ">
+                            {device.protocol}
+                        </span>
+                    </div>
+
+                    <div class="
+                        mt-2
+                        flex
+                        items-center
+                        justify-between
                     ">
-                        {last_seen}
-                    </span>
+                        <span class="text-xs text-slate-600">
+                            "Last seen"
+                        </span>
+
+                        <span class="
+                            text-xs
+                            font-medium
+                            text-slate-500
+                        ">
+                            {last_seen}
+                        </span>
+                    </div>
                 </div>
             </div>
         </article>

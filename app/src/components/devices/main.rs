@@ -1,53 +1,14 @@
-use super::device_card::EmptyDevices;
-use crate::components::devices::device_card::{Device, DeviceCard};
+use crate::{
+    components::devices::device_card::{DeviceCard, EmptyDevices},
+    server_fns::devices::{add_device, get_devices},
+};
 use leptos::prelude::*;
-
-// Dummy server functions
-#[server(GetDevices)]
-pub async fn get_devices() -> Result<Vec<Device>, ServerFnError> {
-    // TODO server fn
-    Ok(vec![
-        Device {
-            id: 1,
-            name: "ESP32".to_string(),
-            device_type: "Microcontroller".to_string(),
-            status: "online".to_string(),
-            last_seen: Some("Just now".to_string()),
-        },
-        Device {
-            id: 2,
-            name: "Camera".to_string(),
-            device_type: "Surveillance".to_string(),
-            status: "online".to_string(),
-            last_seen: Some("2 minutes ago".to_string()),
-        },
-        Device {
-            id: 3,
-            name: "Chicken nugget bombaclat".to_string(),
-            device_type: "KFC".to_string(),
-            status: "offline".to_string(),
-            last_seen: Some("3 hours ago".to_string()),
-        },
-    ])
-}
-
-#[server(AddDevice)]
-pub async fn add_device(name: String, device_type: String) -> Result<Device, ServerFnError> {
-    // TODO server fn
-    Ok(Device {
-        id: 999,
-        name,
-        device_type,
-        status: "online".to_string(),
-        last_seen: Some("Just now".to_string()),
-    })
-}
 
 #[component]
 pub fn Devices() -> impl IntoView {
     let show_add = RwSignal::new(false);
     let device_name = RwSignal::new(String::new());
-    let device_type = RwSignal::new(String::from("ESP32"));
+    let device_type = RwSignal::new(String::from("Laptop"));
     let error = RwSignal::new(None::<String>);
 
     let devices = Resource::new(|| (), |_| async { get_devices().await });
@@ -86,10 +47,12 @@ pub fn Devices() -> impl IntoView {
 
     view! {
         <section class="
-            min-h-screen w-full
+            min-h-screen
+            w-full
             flex-1
             bg-slate-950
-            px-4 py-8
+            px-4
+            py-8
             sm:px-6
             lg:px-8
         ">
@@ -97,7 +60,9 @@ pub fn Devices() -> impl IntoView {
 
                 <div class="
                     mb-8
-                    flex flex-col gap-5
+                    flex
+                    flex-col
+                    gap-5
                     sm:flex-row
                     sm:items-end
                     sm:justify-between
@@ -105,15 +70,18 @@ pub fn Devices() -> impl IntoView {
                     <div>
                         <div class="
                             mb-2
-                            text-xs font-semibold
-                            uppercase tracking-[0.18em]
+                            text-xs
+                            font-semibold
+                            uppercase
+                            tracking-[0.18em]
                             text-slate-500
                         ">
                             "Account"
                         </div>
 
                         <h1 class="
-                            text-3xl font-semibold
+                            text-3xl
+                            font-semibold
                             tracking-tight
                             text-slate-100
                             sm:text-4xl
@@ -141,8 +109,10 @@ pub fn Devices() -> impl IntoView {
                             border
                             border-blue-400/20
                             bg-blue-500/10
-                            px-4 py-2.5
-                            text-sm font-medium
+                            px-4
+                            py-2.5
+                            text-sm
+                            font-medium
                             text-blue-300
                             transition
                             hover:border-blue-400/30
@@ -171,7 +141,8 @@ pub fn Devices() -> impl IntoView {
                     ">
                         <div class="mb-5">
                             <h2 class="
-                                text-base font-semibold
+                                text-base
+                                font-semibold
                                 text-slate-100
                             ">
                                 "Add a device"
@@ -198,7 +169,8 @@ pub fn Devices() -> impl IntoView {
                                     class="
                                         mb-2
                                         block
-                                        text-xs font-medium
+                                        text-xs
+                                        font-medium
                                         text-slate-400
                                     "
                                 >
@@ -208,14 +180,15 @@ pub fn Devices() -> impl IntoView {
                                 <input
                                     id="device-name"
                                     type="text"
-                                    placeholder="e.g. Work laptop"
+                                    placeholder="e.g. ESP32 Living Room"
                                     class="
                                         w-full
                                         rounded-xl
                                         border
                                         border-slate-700
                                         bg-slate-950
-                                        px-4 py-3
+                                        px-4
+                                        py-3
                                         text-sm
                                         text-slate-100
                                         outline-none
@@ -239,7 +212,8 @@ pub fn Devices() -> impl IntoView {
                                     class="
                                         mb-2
                                         block
-                                        text-xs font-medium
+                                        text-xs
+                                        font-medium
                                         text-slate-400
                                     "
                                 >
@@ -254,7 +228,8 @@ pub fn Devices() -> impl IntoView {
                                         border
                                         border-slate-700
                                         bg-slate-950
-                                        px-4 py-3
+                                        px-4
+                                        py-3
                                         text-sm
                                         text-slate-100
                                         outline-none
@@ -274,6 +249,10 @@ pub fn Devices() -> impl IntoView {
                                     <option value="Mobile">"Mobile"</option>
                                     <option value="Tablet">"Tablet"</option>
                                     <option value="Server">"Server"</option>
+                                    <option value="Microcontroller">
+                                        "Microcontroller"
+                                    </option>
+                                    <option value="Camera">"Camera"</option>
                                     <option value="Other">"Other"</option>
                                 </select>
                             </div>
@@ -283,8 +262,10 @@ pub fn Devices() -> impl IntoView {
                                 class="
                                     rounded-xl
                                     bg-blue-600
-                                    px-5 py-3
-                                    text-sm font-medium
+                                    px-5
+                                    py-3
+                                    text-sm
+                                    font-medium
                                     text-white
                                     transition
                                     hover:bg-blue-500
@@ -314,7 +295,8 @@ pub fn Devices() -> impl IntoView {
                                 border
                                 border-red-500/20
                                 bg-red-500/5
-                                px-3 py-2
+                                px-3
+                                py-2
                                 text-sm
                                 text-red-300
                             ">
@@ -345,7 +327,8 @@ pub fn Devices() -> impl IntoView {
                                     text-slate-500
                                 ">
                                     <div class="
-                                        h-5 w-5
+                                        h-5
+                                        w-5
                                         animate-spin
                                         rounded-full
                                         border-2
@@ -405,7 +388,8 @@ pub fn Devices() -> impl IntoView {
                                         p-6
                                     ">
                                         <h2 class="
-                                            text-sm font-semibold
+                                            text-sm
+                                            font-semibold
                                             text-red-300
                                         ">
                                             "Unable to load devices"

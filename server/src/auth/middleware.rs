@@ -33,8 +33,9 @@ pub async fn auth_middleware(
 
     if let Some(claims) = claims {
         let current_user = CurrentUser {
-            user_id: claims.sub,
+            id: claims.sub,
             email: claims.email,
+            name: claims.name,
         };
         req.extensions_mut().insert(current_user);
     }

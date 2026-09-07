@@ -8,6 +8,7 @@ use uuid::Uuid;
 pub struct Claims {
     pub sub: Uuid,
     pub email: String,
+    pub name: Option<String>,
     pub jti: String,
     pub exp: usize,
 }
@@ -35,6 +36,7 @@ pub fn create(user_id: Uuid, email: impl Into<String>) -> jsonwebtoken::errors::
     let claims = Claims {
         sub: user_id,
         email: email.into(),
+        name: None, // TODO fix the rest of the chain
         jti: Uuid::new_v4().to_string(),
         exp: (Utc::now() + Duration::days(7)).timestamp() as usize,
     };

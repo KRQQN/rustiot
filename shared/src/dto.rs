@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CurrentUser {
-    pub user_id: Uuid,
+    pub id: Uuid,
     pub email: String,
+    pub name: Option<String>,
 }

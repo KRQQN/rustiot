@@ -13,7 +13,7 @@ use leptos_router::{
 };
 
 pub use components::hero::Hero;
-pub use pages::{dashboard::DashboardArea, login_home::LoggedInHomePage};
+pub use pages::{dashboard::DashboardArea, devices::DevicesPage, login_home::LoggedInHomePage};
 pub use structs::app_state::AppState;
 
 use crate::components::{challenges::Problems, platform::Platform, solutions::Solutions};
@@ -59,6 +59,11 @@ pub fn App() -> impl IntoView {
                     <Route
                         path=StaticSegment("/dashboard")
                         view=DashboardArea
+                        ssr=SsrMode::Async
+                        />
+                    <Route
+                        path=StaticSegment("/devices")
+                        view=DevicesPage
                         ssr=SsrMode::Async
                         />
                     <Route

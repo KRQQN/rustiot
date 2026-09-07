@@ -3,6 +3,7 @@ pub mod chart;
 pub mod charts;
 pub mod dashboard;
 pub mod dashboard_example;
+pub mod devices;
 pub mod hero;
 pub mod js_charts;
 pub mod login_form;

@@ -15,7 +15,7 @@ pub struct Device {
 }
 
 #[component]
-pub fn DeviceCard(device: Device, on_removed: Callback<()>) -> impl IntoView {
+pub fn DeviceCard(device: Device, on_change: Callback<()>) -> impl IntoView {
     let menu_open = RwSignal::new(false);
     let is_online = device.is_active && device.last_seen_at.is_some();
 
@@ -59,7 +59,13 @@ pub fn DeviceCard(device: Device, on_removed: Callback<()>) -> impl IntoView {
 
     Effect::new(move |_| {
         if let Some(Ok(_)) = remove_action.value().get() {
-            on_removed.run(());
+            on_change.run(());
+        }
+    });
+
+    Effect::new(move |_| {
+        if let Some(Ok(_)) = remove_action.value().get() {
+            on_change.run(());
         }
     });
 
@@ -230,7 +236,7 @@ pub fn DeviceCard(device: Device, on_removed: Callback<()>) -> impl IntoView {
 }
 
 #[component]
-pub fn EmptyDevices(on_add: Callback<()>) -> impl IntoView {
+pub fn EmptyDevices(on_change: Callback<()>) -> impl IntoView {
     view! {
         <div class="
             flex
@@ -284,7 +290,7 @@ pub fn EmptyDevices(on_add: Callback<()>) -> impl IntoView {
                     hover:border-blue-400/30
                     hover:bg-blue-500/20
                 "
-                on:click=move |_| on_add.run(())
+                on:click=move |_| on_change.run(())
             >
                 "+ Add device"
             </button>

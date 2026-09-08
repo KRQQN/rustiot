@@ -39,7 +39,7 @@ struct ConfigRow {
 }
 
 #[component]
-pub fn AddDevice(on_success: Callback<()>) -> impl IntoView {
+pub fn AddDevice(on_change: Callback<()>) -> impl IntoView {
     let device_name = RwSignal::new(String::new());
     let device_type = RwSignal::new(String::from("Laptop"));
     let error = RwSignal::new(None::<String>);
@@ -86,7 +86,7 @@ pub fn AddDevice(on_success: Callback<()>) -> impl IntoView {
                 key: RwSignal::new(String::new()),
                 value_type: RwSignal::new(ConfigValueType::Text),
             }]);
-            on_success.run(());
+            on_change.run(());
         }
         Some(Err(err)) => {
             error.set(Some(err.to_string()));
@@ -231,7 +231,17 @@ pub fn AddDevice(on_success: Callback<()>) -> impl IntoView {
                     })
                 }}
 
-                <div class="flex justify-end">
+                <div class="flex justify-end gap-3">
+                    <button
+                        type="button"
+                        class="rounded-xl border border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800"
+                        on:click=move |_| {
+                            on_change.run(());
+                        }
+                    >
+                        "Cancel"
+                    </button>
+
                     <button
                         type="button"
                         class="rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-400"

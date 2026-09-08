@@ -10,8 +10,12 @@ use leptos::prelude::*;
 #[component]
 pub fn Devices() -> impl IntoView {
     let show_add = RwSignal::new(false);
-    let error = RwSignal::new(None::<String>);
     let devices = Resource::new(|| (), |_| async { get_devices().await });
+
+    let refetch_device_list = Callback::new(move |_| {
+        show_add.set(false);
+        devices.refetch();
+    });
 
     view! {
         <section class="
@@ -25,7 +29,6 @@ pub fn Devices() -> impl IntoView {
             lg:px-8
         ">
             <div class="mx-auto w-full max-w-7xl">
-
                 <div class="
                     mb-8
                     flex
@@ -46,7 +49,6 @@ pub fn Devices() -> impl IntoView {
                         ">
                             "Account"
                         </div>
-
                         <h1 class="
                             text-3xl
                             font-semibold
@@ -56,7 +58,6 @@ pub fn Devices() -> impl IntoView {
                         ">
                             "Your devices"
                         </h1>
-
                         <p class="
                             mt-2
                             text-sm
@@ -65,7 +66,6 @@ pub fn Devices() -> impl IntoView {
                             "Manage the devices connected to your account."
                         </p>
                     </div>
-
                     <button
                         type="button"
                         class="
@@ -88,8 +88,7 @@ pub fn Devices() -> impl IntoView {
                             hover:text-blue-200
                         "
                         on:click=move |_| {
-                            show_add.update(|value| *value = !*value);
-                            error.set(None);
+                            show_add.update(|v| *v = !*v);
                         }
                     >
                         <span class="text-lg leading-none">"+"</span>
@@ -98,12 +97,7 @@ pub fn Devices() -> impl IntoView {
                 </div>
 
                 <Show when=move || show_add.get()>
-                    <AddDevice
-                        on_success=Callback::new(move |_| {
-                            show_add.set(false);
-                            devices.refetch();
-                        })
-                    />
+                    <AddDevice on_change=refetch_device_list />
                 </Show>
 
                 <Suspense
@@ -135,10 +129,7 @@ pub fn Devices() -> impl IntoView {
                                         border-slate-700
                                         border-t-slate-400
                                     "></div>
-
-                                    <span>
-                                        "Loading your devices..."
-                                    </span>
+                                    <span>"Loading your devices..."</span>
                                 </div>
                             </div>
                         }
@@ -150,7 +141,7 @@ pub fn Devices() -> impl IntoView {
                                 if items.is_empty() {
                                     view! {
                                         <EmptyDevices
-                                            on_add=Callback::new(move |_| {
+                                            on_change=Callback::new(move |_| {
                                                 show_add.set(true);
                                             })
                                         />
@@ -172,9 +163,7 @@ pub fn Devices() -> impl IntoView {
                                             >
                                                 <DeviceCard
                                                     device=device
-                                                    on_removed=Callback::new(move |_| {
-                                                        devices.refetch();
-                                                    })
+                                                    on_change=refetch_device_list
                                                 />
                                             </For>
                                         </div>
@@ -182,7 +171,6 @@ pub fn Devices() -> impl IntoView {
                                     .into_any()
                                 }
                             }
-
                             Some(Err(err)) => {
                                 view! {
                                     <div class="
@@ -192,32 +180,17 @@ pub fn Devices() -> impl IntoView {
                                         bg-red-500/5
                                         p-6
                                     ">
-                                        <h2 class="
-                                            text-sm
-                                            font-semibold
-                                            text-red-300
-                                        ">
+                                        <h2 class="text-sm font-semibold text-red-300">
                                             "Unable to load devices"
                                         </h2>
-
-                                        <p class="
-                                            mt-2
-                                            text-sm
-                                            text-slate-500
-                                        ">
+                                        <p class="mt-2 text-sm text-slate-500">
                                             {err.to_string()}
                                         </p>
                                     </div>
                                 }
                                 .into_any()
                             }
-
-                            None => {
-                                view! {
-                                    <div></div>
-                                }
-                                .into_any()
-                            }
+                            None => view! { <div></div> }.into_any(),
                         }
                     }}
                 </Suspense>

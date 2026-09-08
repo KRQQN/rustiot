@@ -1,10 +1,9 @@
+use crate::server_fns::devices::remove_device;
 use chrono::{DateTime, Utc};
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
-
 use uuid::Uuid;
 
-// Temporary
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Device {
     pub id: Uuid,
@@ -16,7 +15,8 @@ pub struct Device {
 }
 
 #[component]
-pub fn DeviceCard(device: Device) -> impl IntoView {
+pub fn DeviceCard(device: Device, on_removed: Callback<()>) -> impl IntoView {
+    let menu_open = RwSignal::new(false);
     let is_online = device.is_active && device.last_seen_at.is_some();
 
     let status_dot = if is_online {
@@ -50,6 +50,18 @@ pub fn DeviceCard(device: Device) -> impl IntoView {
         .unwrap_or_else(|| "Never".to_string());
 
     let icon = device_icon(&device_type);
+    let device_id = device.id;
+
+    let remove_action = Action::new(move |_: &()| {
+        let id = device_id;
+        async move { remove_device(id).await }
+    });
+
+    Effect::new(move |_| {
+        if let Some(Ok(_)) = remove_action.value().get() {
+            on_removed.run(());
+        }
+    });
 
     view! {
         <article class="
@@ -81,11 +93,7 @@ pub fn DeviceCard(device: Device) -> impl IntoView {
             "></div>
 
             <div class="relative">
-                <div class="
-                    flex
-                    items-start
-                    justify-between
-                ">
+                <div class="flex items-start justify-between">
                     <div class="
                         flex
                         h-11
@@ -102,18 +110,85 @@ pub fn DeviceCard(device: Device) -> impl IntoView {
                         {icon}
                     </div>
 
-                    <div class="
-                        flex
-                        items-center
-                        gap-2
-                        text-xs
-                        font-medium
-                    ">
-                        <span class=status_dot></span>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2 text-xs font-medium">
+                            <span class=status_dot></span>
+                            <span class=status_label_class>
+                                {status_label}
+                            </span>
+                        </div>
 
-                        <span class=status_label_class>
-                            {status_label}
-                        </span>
+                        <div class="relative">
+                            <button
+                                type="button"
+                                class="
+                                    flex
+                                    h-8
+                                    w-8
+                                    items-center
+                                    justify-center
+                                    rounded-lg
+                                    text-slate-500
+                                    transition
+                                    hover:bg-slate-800
+                                    hover:text-slate-300
+                                "
+                                on:click=move |_| {
+                                    menu_open.update(|v| *v = !*v);
+                                }
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                >
+                                    <circle cx="12" cy="5" r="1.5"/>
+                                    <circle cx="12" cy="12" r="1.5"/>
+                                    <circle cx="12" cy="19" r="1.5"/>
+                                </svg>
+                            </button>
+
+                            <Show when=move || menu_open.get()>
+                                <div class="
+                                    absolute
+                                    right-0
+                                    top-9
+                                    z-20
+                                    w-40
+                                    overflow-hidden
+                                    rounded-xl
+                                    border
+                                    border-slate-700
+                                    bg-slate-900
+                                    shadow-xl
+                                ">
+                                    <button
+                                        type="button"
+                                        class="
+                                            flex
+                                            w-full
+                                            items-center
+                                            gap-2
+                                            px-3
+                                            py-2.5
+                                            text-left
+                                            text-sm
+                                            text-red-400
+                                            transition
+                                            hover:bg-red-500/10
+                                        "
+                                        on:click=move |_| {
+                                            menu_open.set(false);
+                                            remove_action.dispatch(());
+                                        }
+                                    >
+                                        "Remove device"
+                                    </button>
+                                </div>
+                            </Show>
+                        </div>
                     </div>
                 </div>
 
@@ -126,55 +201,25 @@ pub fn DeviceCard(device: Device) -> impl IntoView {
                     ">
                         {device.name}
                     </h2>
-
-                    <p class="
-                        mt-1
-                        text-xs
-                        text-slate-500
-                    ">
+                    <p class="mt-1 text-xs text-slate-500">
                         {device_type}
                     </p>
                 </div>
 
-                <div class="
-                    mt-6
-                    border-t
-                    border-slate-800
-                    pt-4
-                ">
-                    <div class="
-                        flex
-                        items-center
-                        justify-between
-                    ">
+                <div class="mt-6 border-t border-slate-800 pt-4">
+                    <div class="flex items-center justify-between">
                         <span class="text-xs text-slate-600">
                             "Protocol"
                         </span>
-
-                        <span class="
-                            text-xs
-                            font-medium
-                            text-slate-500
-                        ">
+                        <span class="text-xs font-medium text-slate-500">
                             {device.protocol}
                         </span>
                     </div>
-
-                    <div class="
-                        mt-2
-                        flex
-                        items-center
-                        justify-between
-                    ">
+                    <div class="mt-2 flex items-center justify-between">
                         <span class="text-xs text-slate-600">
                             "Last seen"
                         </span>
-
-                        <span class="
-                            text-xs
-                            font-medium
-                            text-slate-500
-                        ">
+                        <span class="text-xs font-medium text-slate-500">
                             {last_seen}
                         </span>
                     </div>
@@ -216,23 +261,12 @@ pub fn EmptyDevices(on_add: Callback<()>) -> impl IntoView {
             ">
                 "⌁"
             </div>
-
-            <h2 class="
-                text-base
-                font-semibold
-                text-slate-300
-            ">
+            <h2 class="text-base font-semibold text-slate-300">
                 "No devices yet"
             </h2>
-
-            <p class="
-                mt-2
-                text-sm
-                text-slate-500
-            ">
+            <p class="mt-2 text-sm text-slate-500">
                 "Add your first device to get started."
             </p>
-
             <button
                 type="button"
                 class="

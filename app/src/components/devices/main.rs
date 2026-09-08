@@ -170,7 +170,12 @@ pub fn Devices() -> impl IntoView {
                                                 key=|device| device.id
                                                 let:device
                                             >
-                                                <DeviceCard device=device />
+                                                <DeviceCard
+                                                    device=device
+                                                    on_removed=Callback::new(move |_| {
+                                                        devices.refetch();
+                                                    })
+                                                />
                                             </For>
                                         </div>
                                     }

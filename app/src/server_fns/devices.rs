@@ -4,6 +4,7 @@ use crate::{components::devices::device_card::Device, AppState};
 
 #[cfg(feature = "ssr")]
 use crate::server_fns::auth::current_user;
+use uuid::Uuid;
 
 #[server(GetDevices)]
 pub async fn get_devices() -> Result<Vec<Device>, ServerFnError> {
@@ -72,4 +73,28 @@ pub async fn add_device(
     .map_err(|err| ServerFnError::new(err.to_string()))?;
 
     Ok(device)
+}
+
+#[server(RemoveDevice)]
+pub async fn remove_device(id: Uuid) -> Result<(), ServerFnError> {
+    let app_state = expect_context::<AppState>();
+    let user = current_user().await?;
+
+    let result = sqlx::query!(
+        r#"
+            DELETE FROM devices
+            WHERE id = $1 AND user_id = $2
+        "#,
+        id,
+        user.id
+    )
+    .execute(&app_state.pg_pool)
+    .await
+    .map_err(|err| ServerFnError::new(err.to_string()))?;
+
+    if result.rows_affected() == 0 {
+        return Err(ServerFnError::new("Device not found"));
+    }
+
+    Ok(())
 }

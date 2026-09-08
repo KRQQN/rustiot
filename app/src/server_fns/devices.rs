@@ -34,7 +34,11 @@ pub async fn get_devices() -> Result<Vec<Device>, ServerFnError> {
 }
 
 #[server(AddDevice)]
-pub async fn add_device(name: String, device_type: String) -> Result<Device, ServerFnError> {
+pub async fn add_device(
+    name: String,
+    device_type: String,
+    config: serde_json::Value,
+) -> Result<Device, ServerFnError> {
     let app_state = expect_context::<AppState>();
 
     let user = current_user().await?;
@@ -46,9 +50,10 @@ pub async fn add_device(name: String, device_type: String) -> Result<Device, Ser
                 user_id,
                 name,
                 device_type,
-                protocol
+                protocol,
+                config
             )
-            VALUES ($1, $2, $3, 'http')
+            VALUES ($1, $2, $3, 'http', $4)
             RETURNING
                 id,
                 name,
@@ -59,7 +64,8 @@ pub async fn add_device(name: String, device_type: String) -> Result<Device, Ser
         "#,
         user.id,
         name,
-        device_type
+        device_type,
+        config
     )
     .fetch_one(&app_state.pg_pool)
     .await

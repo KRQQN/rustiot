@@ -3,50 +3,15 @@ use crate::{
         add_device::AddDevice,
         device_card::{DeviceCard, EmptyDevices},
     },
-    server_fns::devices::{add_device, get_devices},
+    server_fns::devices::get_devices,
 };
 use leptos::prelude::*;
 
 #[component]
 pub fn Devices() -> impl IntoView {
     let show_add = RwSignal::new(false);
-    let device_name = RwSignal::new(String::new());
-    let device_type = RwSignal::new(String::from("Laptop"));
     let error = RwSignal::new(None::<String>);
-
     let devices = Resource::new(|| (), |_| async { get_devices().await });
-
-    let add_action = Action::new(move |_: &()| {
-        let name = device_name.get().trim().to_string();
-        let kind = device_type.get();
-
-        async move {
-            if name.is_empty() {
-                return Err(ServerFnError::new("Device name is required"));
-            }
-
-            add_device(name, kind).await
-        }
-    });
-
-    Effect::new(move |_| {
-        let result = add_action.value().get();
-
-        match result {
-            Some(Ok(_)) => {
-                device_name.set(String::new());
-                error.set(None);
-                show_add.set(false);
-                devices.refetch();
-            }
-
-            Some(Err(err)) => {
-                error.set(Some(err.to_string()));
-            }
-
-            None => {}
-        }
-    });
 
     view! {
         <section class="

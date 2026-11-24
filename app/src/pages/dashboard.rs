@@ -7,10 +7,11 @@ use crate::{
             toolbar::PanelToolbar,
         },
         side_menu::SideMenu,
-        // toast::InfluxToast,
     },
-    data::{self, dummy::db_read_get_panels},
+    data,
 };
+#[cfg(not(feature = "ssr"))]
+use crate::data::dummy::db_read_get_panels;
 use leptos::{html, prelude::*};
 use web_sys::MouseEvent;
 
@@ -66,7 +67,6 @@ pub fn DashboardArea() -> impl IntoView {
 
     view! {
         <div class="flex min-h-screen bg-slate-100">
-            // <InfluxToast/>
             <SideMenu />
             <div
                 node_ref=canvas_ref

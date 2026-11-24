@@ -1,6 +1,8 @@
 use leptos::prelude::*;
 
-use crate::{components::devices::device_card::Device, AppState};
+use crate::components::devices::device_card::Device;
+#[cfg(feature = "ssr")]
+use crate::AppState;
 
 #[cfg(feature = "ssr")]
 use crate::server_fns::auth::current_user;

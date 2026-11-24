@@ -45,7 +45,6 @@ http.workspace = true
 cfg-if.workspace = true
 thiserror.workspace = true
 chrono = "0.4.45"
-rand = { version = "0.8", features = ["std", "small_rng"] }
 getrandom = { version = "0.2", features = ["js"] }
 
 [features]

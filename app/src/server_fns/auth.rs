@@ -1,7 +1,9 @@
 #[cfg(feature = "ssr")]
 use axum::Extension;
 
+#[cfg(feature = "ssr")]
 use leptos::prelude::*;
+#[cfg(feature = "ssr")]
 use shared::dto::CurrentUser;
 
 #[cfg(feature = "ssr")]

@@ -1,10 +1,3 @@
-#![cfg_attr(feature = "ssr", allow(unused_variables))]
-use crate::components::{
-    charts::DateValuePoint,
-    js_charts::{EBarChart, ELineChart},
-    mock_charts::BarChartMock,
-};
-use chrono::{Duration, Local};
 use leptos::prelude::*;
 
 #[derive(Clone)]
@@ -17,82 +10,9 @@ pub struct DashboardData {
 }
 
 #[component]
-pub fn DashboardExample(data: RwSignal<DashboardData>, mock: bool) -> impl IntoView {
-    let (values, set_values) = signal(vec![
-        245.3f64, 378.1, 343.1, 444.0, 555.0, 666.1, 444.1, 344.1, 345.1, 489.1, 645.3, 699.3,
-        945.3, 1189.3,
-    ]);
-
-    let (chart_data, set_data) = signal({
-        let start = Local::now();
-
-        #[cfg(feature = "ssr")]
-        {
-            (0..10)
-                .map(|i| DateValuePoint {
-                    date: start - Duration::days(i),
-                    value: (30.0 + (i as f64 * 15.0)),
-                })
-                .collect::<Vec<_>>()
-        }
-
-        #[cfg(not(feature = "ssr"))]
-        {
-            use rand::Rng;
-
-            (0..10)
-                .map(|i| DateValuePoint {
-                    date: start - Duration::days(i),
-                    value: (rand::thread_rng().gen_range(0.0_f64..=100.0_f64) * 10.0).round()
-                        / 10.0,
-                })
-                .collect::<Vec<_>>()
-        }
-    });
-
-    let labels = Signal::derive(move || {
-        let mut labels = chart_data
-            .read()
-            .iter()
-            .map(|p| p.date.format("%d %b").to_string())
-            .collect::<Vec<_>>();
-        labels.reverse();
-        labels
-    });
-
-    let chart_values = Signal::derive(move || {
-        let mut values = chart_data
-            .read()
-            .iter()
-            .map(|p| p.value)
-            .collect::<Vec<_>>();
-        values.reverse();
-        values
-    });
+pub fn DashboardExample(data: RwSignal<DashboardData>) -> impl IntoView {
     view! {
             <div class="space-y-1 p-2">
-                    // TODO: add mock points for these
-                    // <div class="h-[13rem] w-full">
-                    //     <Show
-                    //         when=move|| mock
-                    //         fallback=move || {
-                    //             view! {
-                    //                 <BarChartMock/>
-                    //             }
-                    //         }
-                    //     >
-                    //         <EBarChart labels=labels values=chart_values/>
-                    //     </Show>
-                    // </div>
-
-                    // <div class="fill-white w-full h-[230px] ">
-                    //     <ELineChart
-                    //         points=points
-                    //         //labels=labels
-                    //         //values=chart_values
-                    //     />
-                    // </div>
-
             <div class="grid grid-cols-[1fr_1fr_0.9fr] gap-3">
         // Trends
         <div class="bg-[#111a2d] rounded-2xl px-4 py-3 border border-slate-800">

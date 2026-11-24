@@ -97,7 +97,6 @@ dependencies = [
  "leptos_axum",
  "leptos_meta",
  "leptos_router",
- "rand 0.8.7",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",

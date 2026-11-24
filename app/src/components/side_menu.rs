@@ -1,15 +1,18 @@
+use icons::{CalendarDays, ChartColumn, Cpu, House, Settings, Users};
 use leptos::prelude::*;
+
+const ICON_CLASS: &str = "size-5 shrink-0 text-slate-300";
 
 #[component]
 pub fn SideMenu() -> impl IntoView {
     let (collapsed, set_collapsed) = signal(false);
 
-    let menu_items = [
-        ("Home", "🏠", "/"),
-        ("Devices", "📱", "/devices"),
-        ("Statistics", "📊", ""),
-        ("Events", "📅", ""),
-        ("Members", "👥", ""),
+    let menu_items: [(&str, fn() -> AnyView, &str); 5] = [
+        ("Home", || view! { <House class=ICON_CLASS/> }.into_any(), "/"),
+        ("Devices", || view! { <Cpu class=ICON_CLASS/> }.into_any(), "/devices"),
+        ("Statistics", || view! { <ChartColumn class=ICON_CLASS/> }.into_any(), ""),
+        ("Events", || view! { <CalendarDays class=ICON_CLASS/> }.into_any(), ""),
+        ("Members", || view! { <Users class=ICON_CLASS/> }.into_any(), ""),
     ];
 
     view! {
@@ -65,7 +68,7 @@ pub fn SideMenu() -> impl IntoView {
                                 class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg
                                        hover:bg-slate-700 transition-colors"
                             >
-                                <span class="text-xl w-6 text-center shrink-0">{icon}</span>
+                                <span class="flex w-6 justify-center">{icon()}</span>
                                 <Show when=move || !collapsed.get()>
                                     <span class="truncate text-md font-medium">{label}</span>
                                 </Show>
@@ -82,7 +85,9 @@ pub fn SideMenu() -> impl IntoView {
                     class="flex items-center gap-3 px-4 py-3 rounded-lg
                            hover:bg-slate-700 transition-colors"
                 >
-                    <span class="text-xl w-6 text-center shrink-0">"⚙️"</span>
+                    <span class="flex w-6 justify-center">
+                        <Settings class=ICON_CLASS/>
+                    </span>
                     <Show when=move || !collapsed.get()>
                         <span class="truncate text-md font-medium">"Settings"</span>
                     </Show>

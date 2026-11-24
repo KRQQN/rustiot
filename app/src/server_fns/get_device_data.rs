@@ -17,7 +17,11 @@ pub async fn get_device_data(
 ) -> Result<Vec<DeviceReading>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        use crate::server_fns::auth::current_user;
         use crate::structs::app_state::AppState;
+
+        // TODO: check that device_id belongs to the user
+        let _user = current_user().await?;
 
         let app_state = expect_context::<AppState>();
         let client = &app_state.influx;

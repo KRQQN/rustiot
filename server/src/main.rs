@@ -15,10 +15,14 @@ use tower_cookies::CookieManagerLayer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
-    let conf = get_configuration(None).unwrap();
+    let conf = get_configuration(None)?;
     let addr = conf.leptos_options.site_addr;
     let leptos_options = conf.leptos_options;
     let routes = generate_route_list(App);
+
+    let database_url = std::env::var("DATABASE_URL")
+        .map_err(|_| "DATABASE_URL must be set (see .env.example)")?;
+    std::env::var("JWT_SECRET").map_err(|_| "JWT_SECRET must be set (see .env.example)")?;
 
     let pg_pool = PgPoolOptions::new()
         .max_connections(10)
@@ -27,12 +31,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .idle_timeout(Duration::from_secs(600))
         .max_lifetime(Duration::from_secs(1800))
         .test_before_acquire(true)
-        .connect("postgres://leptos:leptos@localhost:5432/leptos")
+        .connect(&database_url)
         .await?;
 
     let influx = {
         let host = std::env::var("INFLUX_HOST").unwrap_or_else(|_| "http://localhost:8181".into());
-        let token = std::env::var("INFLUX_TOKEN").expect("INFLUX_TOKEN must be set");
+        let token = std::env::var("INFLUX_TOKEN")
+            .map_err(|_| "INFLUX_TOKEN must be set (see .env.example)")?;
         let database = std::env::var("INFLUX_DATABASE").unwrap_or_else(|_| "yolo".into());
 
         Client::new(
@@ -93,10 +98,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(app_state);
 
     log!("listening on http://{}", &addr);
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app.into_make_service())
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    axum::serve(listener, app.into_make_service()).await?;
 
     Ok(())
 }

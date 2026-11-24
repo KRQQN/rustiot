@@ -9,24 +9,96 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::ResizeObserver;
 
+/// Creates the ECharts instance once the container div is in the DOM.
+fn mount_chart(node: NodeRef<html::Div>, chart: StoredValue<Option<EChart>>) {
+    Effect::new(move |_| {
+        let Some(div) = node.get() else {
+            return;
+        };
+
+        chart.update_value(|slot| {
+            if slot.is_none() {
+                *slot = Some(EChart::new(div, &js_sys::Object::new().into()));
+            }
+        });
+    });
+}
+
+/// Converts chart options into a JS object for ECharts.
+fn to_js(options: &Value) -> Option<JsValue> {
+    match js_sys::JSON::parse(&options.to_string()) {
+        Ok(js) => Some(js),
+        Err(err) => {
+            leptos::logging::warn!("chart options could not be converted to JS: {err:?}");
+            None
+        }
+    }
+}
+
+/// Pushes new options to the chart if it has been mounted.
+fn apply_options(chart: StoredValue<Option<EChart>>, options: &JsValue) {
+    chart.with_value(|slot| {
+        if let Some(c) = slot {
+            c.update(options);
+        }
+    });
+}
+
+/// Resizes the chart whenever its container changes size.
+fn follow_container_size(node: NodeRef<html::Div>, chart: StoredValue<Option<EChart>>) {
+    Effect::new(move |_| {
+        let Some(div) = node.get() else {
+            return;
+        };
+
+        let cb = Closure::wrap(Box::new(
+            move |_entries: js_sys::Array, _observer: ResizeObserver| {
+                chart.with_value(|slot| {
+                    if let Some(c) = slot {
+                        c.resize();
+                    }
+                });
+            },
+        ) as Box<dyn FnMut(js_sys::Array, ResizeObserver)>);
+
+        let observer = match ResizeObserver::new(cb.as_ref().unchecked_ref()) {
+            Ok(observer) => observer,
+            Err(err) => {
+                leptos::logging::warn!("ResizeObserver unavailable, chart will not resize: {err:?}");
+                return;
+            }
+        };
+
+        observer.observe(&div);
+
+        cb.forget();
+
+        on_cleanup(move || {
+            observer.disconnect();
+        });
+    });
+}
+
+/// Sets `xAxis.axisLabel.formatter` on the chart options.
+fn set_x_axis_label_formatter(options: &JsValue, formatter: &js_sys::Function) {
+    let result = js_sys::Reflect::get(options, &JsValue::from_str("xAxis"))
+        .and_then(|x_axis| js_sys::Reflect::get(&x_axis, &JsValue::from_str("axisLabel")))
+        .and_then(|label| {
+            js_sys::Reflect::set(&label, &JsValue::from_str("formatter"), formatter)
+        });
+
+    if let Err(err) = result {
+        leptos::logging::warn!("could not set x-axis label formatter: {err:?}");
+    }
+}
+
 #[component]
 pub fn ELineChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
     let node = NodeRef::<html::Div>::new();
     let chart = StoredValue::new(None::<EChart>);
 
     {
-        Effect::new(move |_| {
-            let Some(div) = node.get() else {
-                return;
-            };
-
-            chart.update_value(|slot| {
-                if slot.is_none() {
-                    let js = js_sys::JSON::parse("{}").unwrap();
-                    *slot = Some(EChart::new(div, &js));
-                }
-            });
-        });
+        mount_chart(node, chart);
 
         Effect::new(move |_| {
             let options = json!({
@@ -99,13 +171,9 @@ pub fn ELineChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
                 }]
             });
 
-            let js = js_sys::JSON::parse(&options.to_string()).unwrap();
-
-            // xAxis
-            let x_axis = js_sys::Reflect::get(&js, &JsValue::from_str("xAxis")).unwrap();
-
-            let axis_label =
-                js_sys::Reflect::get(&x_axis, &JsValue::from_str("axisLabel")).unwrap();
+            let Some(js) = to_js(&options) else {
+                return;
+            };
 
             let formatter = js_sys::Function::new_with_args(
                 "value",
@@ -120,40 +188,11 @@ pub fn ELineChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
         "#,
             );
 
-            js_sys::Reflect::set(&axis_label, &JsValue::from_str("formatter"), &formatter).unwrap();
-
-            chart.with_value(|slot| {
-                if let Some(c) = slot {
-                    c.update(&js);
-                }
-            });
+            set_x_axis_label_formatter(&js, &formatter);
+            apply_options(chart, &js);
         });
-        Effect::new(move |_| {
-            let Some(div) = node.get() else {
-                return;
-            };
 
-            let cb = Closure::wrap(Box::new(
-                move |_entries: js_sys::Array, _observer: web_sys::ResizeObserver| {
-                    chart.with_value(|slot| {
-                        if let Some(c) = slot {
-                            c.resize();
-                        }
-                    });
-                },
-            )
-                as Box<dyn FnMut(js_sys::Array, web_sys::ResizeObserver)>);
-
-            let observer = web_sys::ResizeObserver::new(cb.as_ref().unchecked_ref()).unwrap();
-
-            observer.observe(&div);
-
-            cb.forget();
-
-            on_cleanup(move || {
-                observer.disconnect();
-            });
-        });
+        follow_container_size(node, chart);
     }
 
     view! {
@@ -171,18 +210,7 @@ pub fn EBarChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
 
     {
         // Create the chart once when the DOM node is ready
-        Effect::new(move |_| {
-            let Some(div) = node.get() else {
-                return;
-            };
-
-            chart.update_value(|slot| {
-                if slot.is_none() {
-                    let js = js_sys::JSON::parse("{}").unwrap();
-                    *slot = Some(EChart::new(div, &js));
-                }
-            });
-        });
+        mount_chart(node, chart);
 
         //  Update options whenever labels / values change
         Effect::new(move |_| {
@@ -258,44 +286,13 @@ pub fn EBarChart(#[prop(into)] points: Signal<Vec<Value>>) -> impl IntoView {
                 }]
             });
 
-            let js = js_sys::JSON::parse(&options.to_string()).unwrap();
-
-            chart.with_value(|slot| {
-                if let Some(c) = slot {
-                    c.update(&js);
-                }
-            });
+            if let Some(js) = to_js(&options) {
+                apply_options(chart, &js);
+            }
         });
 
         // ResizeObserver (!) makes the chart follow the panel size
-        Effect::new(move |_| {
-            let Some(div) = node.get() else {
-                return;
-            };
-
-            let cb = Closure::wrap(Box::new(
-                move |_entries: js_sys::Array, _observer: web_sys::ResizeObserver| {
-                    chart.with_value(|slot| {
-                        if let Some(c) = slot {
-                            c.resize();
-                        }
-                    });
-                },
-            )
-                as Box<dyn FnMut(js_sys::Array, web_sys::ResizeObserver)>);
-
-            let observer = web_sys::ResizeObserver::new(cb.as_ref().unchecked_ref()).unwrap();
-
-            observer.observe(&div);
-
-            // Forget the closure so it stays alive (standard pattern)
-            cb.forget();
-
-            // Still disconnect the observer when the component is destroyed
-            on_cleanup(move || {
-                observer.disconnect();
-            });
-        });
+        follow_container_size(node, chart);
     }
 
     view! {
@@ -363,18 +360,7 @@ pub fn ECalendarHeatmap(
     #[cfg(not(feature = "ssr"))]
     {
         // 1. Create the chart once
-        Effect::new(move |_| {
-            let Some(div) = node.get() else {
-                return;
-            };
-
-            chart.update_value(|slot| {
-                if slot.is_none() {
-                    let js = js_sys::JSON::parse("{}").unwrap();
-                    *slot = Some(EChart::new(div, &js));
-                }
-            });
-        });
+        mount_chart(node, chart);
 
         // 2. Update options whenever data changes
         Effect::new(move |_| {
@@ -409,43 +395,13 @@ pub fn ECalendarHeatmap(
                 }]
             });
 
-            let js = js_sys::JSON::parse(&options.to_string()).unwrap();
-
-            chart.with_value(|slot| {
-                if let Some(c) = slot {
-                    c.update(&js);
-                }
-            });
+            if let Some(js) = to_js(&options) {
+                apply_options(chart, &js);
+            }
         });
 
         // 3. ResizeObserver
-        Effect::new(move |_| {
-            let Some(div) = node.get() else {
-                return;
-            };
-
-            let cb = Closure::wrap(Box::new(
-                move |_entries: js_sys::Array, _observer: web_sys::ResizeObserver| {
-                    chart.with_value(|slot| {
-                        if let Some(c) = slot {
-                            c.resize();
-                        }
-                    });
-                },
-            )
-                as Box<dyn FnMut(js_sys::Array, web_sys::ResizeObserver)>);
-
-            let observer = web_sys::ResizeObserver::new(cb.as_ref().unchecked_ref()).unwrap();
-
-            observer.observe(&div);
-
-            // Forget the closure (standard pattern)
-            cb.forget();
-
-            on_cleanup(move || {
-                observer.disconnect();
-            });
-        });
+        follow_container_size(node, chart);
     }
 
     view! {
@@ -463,18 +419,7 @@ pub fn ETreeChart(#[prop(into)] data: Signal<Value>) -> impl IntoView {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Effect::new(move |_| {
-            let Some(div) = node.get() else {
-                return;
-            };
-
-            chart.update_value(|slot| {
-                if slot.is_none() {
-                    let js = js_sys::JSON::parse("{}").unwrap();
-                    *slot = Some(EChart::new(div, &js));
-                }
-            });
-        });
+        mount_chart(node, chart);
 
         Effect::new(move |_| {
             let options = json!({
@@ -539,13 +484,9 @@ pub fn ETreeChart(#[prop(into)] data: Signal<Value>) -> impl IntoView {
             }]
             });
 
-            let js = js_sys::JSON::parse(&options.to_string()).unwrap();
-
-            chart.with_value(|slot| {
-                if let Some(chart) = slot {
-                    chart.update(&js);
-                }
-            });
+            if let Some(js) = to_js(&options) {
+                apply_options(chart, &js);
+            }
         });
     }
 

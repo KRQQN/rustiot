@@ -6,5 +6,9 @@ pub fn load_influx_token() -> Result<String> {
     let contents = fs::read_to_string("/run/influx-data/influx-token.json")?;
     let json: Value = serde_json::from_str(&contents)?;
 
-    Ok(json["token"].as_str().unwrap().to_string())
+    let token = json["token"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("influx-token.json has no \"token\" string field"))?;
+
+    Ok(token.to_string())
 }

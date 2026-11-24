@@ -6,7 +6,7 @@ service, and a Leptos web app where users register devices and build dashboards 
 > **Status:** work in progress. Accounts, device management, telemetry ingestion and charts work.
 > Saving dashboard layouts is next (see [Roadmap](#roadmap)).
 
-![Dashboard: panels snap to the grid and are placed automatically](docs/dashboard.gif)
+![Dashboard: new panels are placed automatically, a panel dropped on another slides to the nearest free spot, and resizing snaps to the grid](docs/dashboard.gif)
 
 | Landing page | Devices |
 |---|---|

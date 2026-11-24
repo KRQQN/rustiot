@@ -1,110 +1,108 @@
-<picture>
-    <source srcset="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_Solid_White.svg" media="(prefers-color-scheme: dark)">
-    <img src="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_RGB.svg" alt="Leptos Logo">
-</picture>
+# rustiot
 
-# Leptos Axum Starter Template
+A full-stack IoT platform written in Rust, end to end: firmware on an ESP32-S3, an MQTT ingestion
+service, and a Leptos web app where users register devices and build dashboards of live sensor data.
 
-This is a template for use with the [Leptos](https://github.com/leptos-rs/leptos) web framework and the [cargo-leptos](https://github.com/leptos-rs/cargo-leptos) tool using [Axum](https://github.com/tokio-rs/axum).
+> **Status:** work in progress. Accounts, device management, telemetry ingestion and charts work.
+> Saving dashboard layouts is next (see [Roadmap](#roadmap)).
 
-## Creating your template repo
+<!-- Add a screenshot or GIF of the dashboard here, e.g. docs/dashboard.png -->
 
-If you don't have `cargo-leptos` installed you can install it with
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Device["ESP32-S3 (embedded/)"]
+        S[DHT11 sensor] --> FW[Embassy firmware]
+        BLE[BLE Wi-Fi provisioning] --> FW
+    end
+
+    FW -- "MQTT<br/>devices/{id}/telemetry" --> B[(EMQX broker)]
+    B --> MW["middleware/<br/>Tokio + rumqttc"]
+    MW --> I[(InfluxDB 3<br/>telemetry)]
+
+    subgraph Web["Web app (app/, server/, frontend/)"]
+        UI[Leptos UI<br/>WASM, hydrated] <-- server functions --> SRV[Axum server<br/>SSR + auth]
+    end
+
+    SRV --> P[(PostgreSQL<br/>users, devices)]
+    SRV --> I
+```
+
+| Crate | What it does |
+|---|---|
+| `embedded/` | `no_std` async firmware for the ESP32-S3 (esp-hal, Embassy). Reads a DHT11, gets Wi-Fi credentials over BLE (GATT), publishes telemetry over MQTT. Built separately with its own toolchain. |
+| `middleware/` | Subscribes to `devices/+/telemetry`, parses and validates messages, and writes them to InfluxDB 3. |
+| `server/` | Axum binary: server-side rendering, server-function endpoints, JWT cookie auth middleware and protected routes. |
+| `app/` | Leptos components and server functions shared by server and browser: login/sign-up, device CRUD, drag-and-resize dashboard grid, ECharts wrappers. |
+| `frontend/` | The WASM entry point that hydrates `app` in the browser. |
+| `shared/` | Types used across crates: DTOs, JWT helpers, database domain types. |
+
+## Highlights
+
+- **One language from sensor to screen.** The firmware, ingestion service, backend and UI are all Rust.
+- **Type-checked SQL.** Queries use `sqlx` macros checked against the schema at compile time
+  (offline data in `.sqlx/`, so the project builds without a database).
+- **Auth.** Argon2 password hashing, signed JWTs in HTTP-only cookies, device records scoped to their owner.
+- **Device onboarding over BLE.** The device exposes a GATT service for Wi-Fi SSID and password, then connects and starts publishing.
+- **Dashboard grid.** Panels snap to a grid, can be dragged and resized, and are placed in the nearest free spot automatically.
+
+## Running locally
+
+Requirements: Rust nightly (pinned in `rust-toolchain.toml`), `wasm32-unknown-unknown` target,
+[`cargo-leptos`](https://github.com/leptos-rs/cargo-leptos), [`sqlx-cli`](https://crates.io/crates/sqlx-cli), Docker.
+
+**1. Postgres**
 
 ```bash
-cargo install cargo-leptos --locked
+docker run -d --name rustiot-postgres -p 5432:5432 \
+  -e POSTGRES_USER=leptos -e POSTGRES_PASSWORD=leptos -e POSTGRES_DB=leptos postgres:16
+cp .env.example .env               # then set JWT_SECRET
+sqlx migrate run --source server/migrations
 ```
 
-Then run
-```bash
-cargo leptos new --git https://github.com/leptos-rs/start-axum-workspace/
-```
-
-to generate a new project template.
+**2. Broker, InfluxDB and middleware**
 
 ```bash
-cd rustiot
+cd middleware
+cp .env.example .env
+docker compose up -d --build       # EMQX on :1883 (dashboard :18083), InfluxDB on :8181
+docker exec dc_influxdb cat /var/lib/influxdb3/influx-token.json   # copy "token" into INFLUX_TOKEN in ../.env
 ```
 
-to go to your newly created project.
-Feel free to explore the project structure, but the best place to start with your application code is in `app/src/lib.rs`.
-Additionally, Cargo.toml may need updating as new versions of the dependencies are released, especially if things are not working after a `cargo update`.
-
-### Islands support
-
-Note that for islands to work correctly, you need to have a `use app;` in your frontend `lib.rs` otherwise rustc / wasm_bindgen gets confused.
-To prevent clippy from complaining, at the top of the `frontend/src/lib.rs` file place:
-```rust
-#[allow(clippy::single_component_path_imports)]
-#[allow(unused_imports)]
-use app;
-```
-
-## Running your project
+**3. Web app**
 
 ```bash
-cargo leptos watch
+cargo leptos watch                 # http://127.0.0.1:3000
 ```
 
-## Installing Additional Tools
+**Send test telemetry without hardware**
 
-By default, `cargo-leptos` uses `nightly` Rust, `cargo-generate`, and `sass`. If you run into any trouble, you may need to install one or more of these tools.
-
-1. `rustup toolchain install nightly --allow-downgrade` - make sure you have Rust nightly
-2. `rustup default nightly` - setup nightly as default, or you can use rust-toolchain file later on
-3. `rustup target add wasm32-unknown-unknown` - add the ability to compile Rust to WebAssembly
-4. `cargo install cargo-generate` - install `cargo-generate` binary (should be installed automatically in future)
-5. `npm install -g sass` - install `dart-sass` (should be optional in future
-
-## Compiling for Release
 ```bash
-cargo leptos build --release
+mosquitto_pub -h localhost -t devices/test-device/telemetry -m '{"data": {"temp": 22.5, "hum": 41}}'
 ```
 
-Will generate your server binary in target/server/release and your site package in target/site
+**4. Firmware (optional)**
 
-## Testing Your Project
+Needs the Xtensa toolchain (`espup install`) and `espflash`. Set `BROKER_HOST` in
+`embedded/src/tasks/mqtt.rs` to the machine running EMQX, then:
 
-Cargo-leptos uses [Playwright](https://playwright.dev) as the end-to-end test tool.
-
-Prior to the first run of the end-to-end tests run Playwright must be installed.
-In the project's `end2end` directory run `npm install -D playwright @playwright/test` to install playwright and browser specific APIs.
-
-To run the tests during development in the project root run:
 ```bash
-cargo leptos end-to-end
+cd embedded
+cargo run --release                # flashes and opens the serial monitor
 ```
 
-To run tests for release in the project root run:
-```bash
-cargo leptos end-to-end --release
-```
-There are some examples tests are located in `end2end/tests` directory that pass tests with the sample Leptos app.
+Provision Wi-Fi by writing the SSID and password to the `WiFi Provision` BLE service (any BLE app such as nRF Connect works).
 
-A web-based report on tests is available by running `npx playwright show-report` in the `end2end` directory.
+## Roadmap
 
+- [ ] Save and load dashboard panels per user (the `dashboards` and `panels` tables exist; the UI still uses sample panels)
+- [ ] Bind panels to live device telemetry
+- [ ] Link registered devices to their MQTT ids and check ownership when reading telemetry (reads currently require login, but not ownership)
+- [ ] Broker address and credentials via provisioning instead of a constant in the firmware
+- [ ] MQTT over TLS
+- [ ] Tests for the middleware parsers and server functions
 
-## Executing a Server on a Remote Machine Without the Toolchain
-After running a `cargo leptos build --release` the minimum files needed are:
+## License
 
-1. The server binary located in `target/server/release`
-2. The `site` directory and all files within located in `target/site`
-
-Copy these files to your remote server. The directory structure should be:
-```text
-rustiot
-site/
-```
-Set the following environment variables (updating for your project as needed):
-```text
-LEPTOS_OUTPUT_NAME="rustiot"
-LEPTOS_SITE_ROOT="site"
-LEPTOS_SITE_PKG_DIR="pkg"
-LEPTOS_SITE_ADDR="127.0.0.1:3000"
-LEPTOS_RELOAD_PORT="3001"
-```
-Finally, run the server binary.
-
-## Licensing
-
-This template itself is released under the Unlicense. You should replace the LICENSE for your own application with an appropriate license if you plan to release it publicly.
+Public domain under [The Unlicense](LICENSE).
